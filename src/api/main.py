@@ -22,6 +22,20 @@ from .mapping_api import router as mapping_router  # noqa: E402
 
 app.include_router(mapping_router)
 
+# M3 批量 Web 界面（纯静态单页，同源调用上面的接口）
+from pathlib import Path as _Path  # noqa: E402
+
+from fastapi.responses import FileResponse  # noqa: E402
+from fastapi.staticfiles import StaticFiles  # noqa: E402
+
+_WEB_DIR = _Path(__file__).resolve().parents[2] / "web"
+if _WEB_DIR.exists():
+    app.mount("/web", StaticFiles(directory=str(_WEB_DIR), html=True), name="web")
+
+    @app.get("/", include_in_schema=False)
+    def _index() -> FileResponse:
+        return FileResponse(str(_WEB_DIR / "index.html"))
+
 COLLECTORS = {
     "taobao": TaobaoCollector,
     "tmall": TaobaoCollector,

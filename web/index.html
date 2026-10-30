@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>一键铺货 · 批量工作台</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --card: #fff; --line: #e3e6eb; --text: #1f2329;
+    --muted: #8a9099; --blue: #2563eb; --green: #16a34a; --red: #dc2626;
+    --amber: #d97706;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 14px/1.6 -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+  }
+  header {
+    background: var(--card); border-bottom: 1px solid var(--line);
+    padding: 14px 24px; display: flex; align-items: center; gap: 16px;
+  }
+  header h1 { font-size: 16px; margin: 0; font-weight: 600; }
+  header .sub { color: var(--muted); font-size: 12px; }
+  main { max-width: 1240px; margin: 0 auto; padding: 20px 24px 60px; }
+  .card {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 10px; padding: 18px 20px; margin-bottom: 16px;
+  }
+  .card h2 { font-size: 14px; margin: 0 0 12px; font-weight: 600; }
+  .card h2 .n {
+    display: inline-block; width: 20px; height: 20px; line-height: 20px;
+    text-align: center; background: var(--blue); color: #fff;
+    border-radius: 50%; font-size: 12px; margin-right: 8px;
+  }
+  textarea {
+    width: 100%; min-height: 96px; padding: 10px 12px; font: inherit;
+    border: 1px solid var(--line); border-radius: 8px; resize: vertical;
+  }
+  textarea:focus { outline: 2px solid #bfdbfe; border-color: var(--blue); }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
+  button {
+    font: inherit; padding: 8px 16px; border-radius: 8px; cursor: pointer;
+    border: 1px solid var(--line); background: #fff; color: var(--text);
+    transition: .15s;
+  }
+  button:hover:not(:disabled) { border-color: var(--blue); color: var(--blue); }
+  button.primary { background: var(--blue); border-color: var(--blue); color: #fff; }
+  button.primary:hover:not(:disabled) { background: #1d4ed8; color: #fff; }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  .hint { color: var(--muted); font-size: 12px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 500; font-size: 12px; white-space: nowrap; }
+  tr:hover td { background: #fafbfc; }
+  .tag {
+    display: inline-block; padding: 1px 8px; border-radius: 20px;
+    font-size: 12px; white-space: nowrap;
+  }
+  .tag.ok { background: #dcfce7; color: var(--green); }
+  .tag.err { background: #fee2e2; color: var(--red); }
+  .tag.wait { background: #fef3c7; color: var(--amber); }
+  .tag.idle { background: #f1f3f5; color: var(--muted); }
+  .bar { height: 4px; background: var(--line); border-radius: 4px; overflow: hidden; margin-top: 10px; }
+  .bar > i { display: block; height: 100%; background: var(--blue); width: 0; transition: .3s; }
+  .log {
+    background: #0f172a; color: #cbd5e1; font: 12px/1.7 ui-monospace, Consolas, monospace;
+    padding: 12px 14px; border-radius: 8px; max-height: 220px; overflow: auto;
+    white-space: pre-wrap; word-break: break-all;
+  }
+  .empty { color: var(--muted); text-align: center; padding: 28px 0; font-size: 13px; }
+  .kv { color: var(--muted); font-size: 12px; }
+  .kv b { color: var(--text); font-weight: 600; }
+</style>
+</head>
+<body>
+<header>
+  <h1>一键铺货 · 批量工作台</h1>
+  <span class="sub">粘贴链接 → 采集 → 映射 → 生成载荷 → 存草稿</span>
+</header>
+
+<main>
+  <!-- 1. 输入 -->
+  <section class="card">
+    <h2><span class="n">1</span>粘贴商品链接</h2>
+    <textarea id="links" placeholder="一行一个，支持这些格式：
+https://item.taobao.com/item.htm?id=123456789
+https://detail.tmall.com/item.htm?id=123456789
+123456789
+https://m.tb.cn/h.xxxxx"></textarea>
+    <div class="row">
+      <button class="primary" id="btnCollect">开始采集</button>
+      <button id="btnClear">清空</button>
+      <span class="hint" id="collectHint">采集间隔 3 秒（防风控），别关页面</span>
+    </div>
+    <div class="bar"><i id="collectBar"></i></div>
+  </section>
+
+  <!-- 2. 结果 -->
+  <section class="card">
+    <h2><span class="n">2</span>采集结果</h2>
+    <div id="tableWrap"><div class="empty">还没有数据</div></div>
+    <div class="row">
+      <button id="btnMap" disabled>批量匹配类目</button>
+      <button id="btnPrepare" disabled>批量生成载荷（dry_run）</button>
+      <button id="btnDraft" disabled>批量存草稿</button>
+      <span class="hint" id="actionHint"></span>
+    </div>
+  </section>
+
+  <!-- 3. 日志 -->
+  <section class="card">
+    <h2><span class="n">3</span>执行日志</h2>
+    <div class="log" id="log">就绪。</div>
+  </section>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const state = { items: [], busy: false };
+
+function log(msg) {
+  const el = $('log');
+  const t = new Date().toLocaleTimeString('zh-CN', { hour12: false });
+  el.textContent += `\n[${t}] ${msg}`;
+  el.scrollTop = el.scrollHeight;
+}
+
+function setBusy(on, hint) {
+  state.busy = on;
+  for (const id of ['btnCollect', 'btnMap', 'btnPrepare', 'btnDraft']) {
+    $(id).disabled = on || ($(id).dataset.needRows === '1' && state.items.length === 0);
+  }
+  if (hint !== undefined) $('actionHint').textContent = hint;
+  refreshButtons();
+}
+
+function refreshButtons() {
+  const has = state.items.length > 0 && !state.busy;
+  $('btnMap').disabled = !has;
+  $('btnPrepare').disabled = !has;
+  $('btnDraft').disabled = !has;
+}
+
+function parseLinks(text) {
+  return text.split('\n').map(s => s.trim()).filter(s => s && !s.startsWith('#'));
+}
+
+async function api(path, body) {
+  const r = await fetch(path, {
+    method: body ? 'POST' : 'GET',
+    headers: body ? { 'Content-Type': 'application/json' } : {},
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const text = await r.text();
+  let data;
+  try { data = JSON.parse(text); } catch { data = { raw: text }; }
+  if (!r.ok) throw new Error(data.detail || data.raw || `HTTP ${r.status}`);
+  return data;
+}
+
+function render() {
+  const wrap = $('tableWrap');
+  if (!state.items.length) {
+    wrap.innerHTML = '<div class="empty">还没有数据</div>';
+    refreshButtons();
+    return;
+  }
+  const rows = state.items.map((it, i) => {
+    const tag = it.status === 'ok' ? '<span class="tag ok">已采集</span>'
+      : it.status === 'running' ? '<span class="tag wait">采集中</span>'
+      : it.status === 'error' ? '<span class="tag err">失败</span>'
+      : '<span class="tag idle">等待</span>';
+    const cat = it.category
+      ? `<span class="tag ${it.category.ok ? 'ok' : 'wait'}">${it.category.target_cid || (it.category.candidates?.[0]?.cid ?? '待确认')}</span>`
+      : '<span class="kv">—</span>';
+    return `<tr>
+      <td>${i + 1}</td>
+      <td>${tag}</td>
+      <td>${it.item_id || '—'}</td>
+      <td title="${it.title || ''}">${(it.title || '—').slice(0, 42)}</td>
+      <td>${it.price || '—'}</td>
+      <td>${it.skus ?? '—'}</td>
+      <td>${it.images ?? '—'}</td>
+      <td>${cat}</td>
+      <td class="kv">${it.note || ''}</td>
+    </tr>`;
+  }).join('');
+  wrap.innerHTML = `<table>
+    <thead><tr>
+      <th>#</th><th>状态</th><th>商品ID</th><th>标题</th>
+      <th>价格</th><th>SKU</th><th>主图</th><th>类目</th><th>说明</th>
+    </tr></thead><tbody>${rows}</tbody></table>`;
+  refreshButtons();
+}
+
+async function doCollect() {
+  const links = parseLinks($('links').value);
+  if (!links.length) { log('没有链接'); return; }
+  state.items = links.map(l => ({ raw: l, status: 'idle', item_id: '', title: '' }));
+  render();
+  setBusy(true, '采集中…');
+
+  let done = 0;
+  for (let i = 0; i < links.length; i++) {
+    const it = state.items[i];
+    it.status = 'running'; render();
+    log(`采集 ${i + 1}/${links.length}: ${links[i].slice(0, 60)}`);
+    try {
+      const r = await api('/collect', {
+        platform: 'taobao', item_id: links[i],
+        download_media: true, with_detail: false,
+      });
+      it.status = 'ok';
+      it.item_id = r.item_id;
+      it.title = (r.summary || '').split('\n')[0] || '';
+      // summary 里带标题行，简单解析
+      const m = (r.summary || '').match(/\]\s+\S+\s+(.*)/);
+      if (m) it.title = m[1];
+      log(`  ✓ ${r.item_id}`);
+    } catch (e) {
+      it.status = 'error';
+      it.note = e.message.slice(0, 60);
+      log(`  × ${e.message.slice(0, 120)}`);
+    }
+    done++;
+    $('collectBar').style.width = `${(done / links.length * 100).toFixed(1)}%`;
+    render();
+    if (i < links.length - 1) await new Promise(r => setTimeout(r, 3000));
+  }
+  setBusy(false, `采集完成 ${done}/${links.length}`);
+  log('采集结束');
+}
+
+async function doMap() {
+  setBusy(true, '匹配类目中…');
+  for (const it of state.items) {
+    if (it.status !== 'ok') continue;
+    try {
+      const r = await api('/map/category', { item_id: it.item_id, target_platform: 'taobao' });
+      it.category = r;
+      it.note = r.ok ? '已确认' : (r.candidates?.length ? `候选 ${r.candidates.length} 个` : '无候选');
+      log(`类目 ${it.item_id}: ${r.status} ${r.target_cid || (r.candidates?.[0]?.cid ?? '')}`);
+    } catch (e) {
+      it.note = '映射失败';
+      log(`  × ${it.item_id} ${e.message.slice(0, 80)}`);
+    }
+    render();
+  }
+  setBusy(false, '类目匹配完成');
+}
+
+async function doPrepare() {
+  setBusy(true, '生成载荷中…');
+  for (const it of state.items) {
+    if (it.status !== 'ok') continue;
+    const cid = it.category?.target_cid || it.category?.candidates?.[0]?.cid;
+    if (!cid) { it.note = '无目标类目'; render(); continue; }
+    try {
+      const r = await api('/publish/prepare', {
+        item_id: it.item_id, target_platform: 'taobao',
+        channel: 'open_api', mode: 'dry_run', target_cid: cid,
+      });
+      it.note = r.ok ? `载荷就绪 ${r.payload?.skus?.length ?? 0} SKU`
+                     : `校验失败: ${(r.errors || []).join('; ').slice(0, 40)}`;
+      log(`载荷 ${it.item_id}: ${it.note}`);
+    } catch (e) {
+      it.note = '载荷失败';
+      log(`  × ${it.item_id} ${e.message.slice(0, 80)}`);
+    }
+    render();
+  }
+  setBusy(false, '载荷生成完成');
+}
+
+async function doDraft() {
+  setBusy(true, '存草稿中…');
+  for (const it of state.items) {
+    if (it.status !== 'ok') continue;
+    const cid = it.category?.target_cid || it.category?.candidates?.[0]?.cid;
+    if (!cid) { it.note = '无目标类目'; render(); continue; }
+    try {
+      const r = await api('/publish/draft', {
+        item_id: it.item_id, target_platform: 'taobao',
+        channel: 'open_api', mode: 'draft', target_cid: cid,
+      });
+      it.note = r.ok ? `草稿 ${r.draft_id}` : `失败 ${r.error_code || ''}`;
+      log(`草稿 ${it.item_id}: ${it.note}`);
+    } catch (e) {
+      it.note = '草稿失败';
+      log(`  × ${it.item_id} ${e.message.slice(0, 80)}`);
+    }
+    render();
+  }
+  setBusy(false, '存草稿完成');
+}
+
+$('btnCollect').onclick = doCollect;
+$('btnMap').onclick = doMap;
+$('btnPrepare').onclick = doPrepare;
+$('btnDraft').onclick = doDraft;
+$('btnClear').onclick = () => {
+  if (state.busy) return;
+  $('links').value = '';
+  state.items = [];
+  $('collectBar').style.width = '0';
+  render();
+  log('已清空');
+};
+render();
+</script>
+</body>
+</html>

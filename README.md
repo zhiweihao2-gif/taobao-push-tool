@@ -119,6 +119,46 @@ python scripts/rate_status.py --reset taobao   # 确认风控解除后手动解�
 
 批量采集务必加间隔：`--delay 3`。
 
+## 1.7 Web 批量工作台（M3）
+
+```bash
+python -m uvicorn src.api.main:app --port 8848
+# 打开 http://127.0.0.1:8848/
+```
+
+单页界面，四步走完：**粘贴多个链接 → 采集 → 匹配类目 → 生成载荷/存草稿**。
+带进度条和实时日志，全程同源调本地 API，不联网。
+
+## 1.8 三个实用工具
+
+```bash
+# 类目树：校验 / 统计 / 生成 CSV 模板 / 从 CSV 导入
+python scripts/category_tree_tool.py validate
+python scripts/category_tree_tool.py stats
+python scripts/category_tree_tool.py template
+python scripts/category_tree_tool.py import my_categories.csv
+
+# M2 全流程演示（拿已采集的商品走一遍映射→载荷→草稿）
+python scripts/demo_m2.py 1073025553052 --auto-confirm
+
+# 抓淘宝发布接口（需要卖家账号）
+python scripts/capture_publish.py
+```
+
+## 1.9 发布接口现状
+
+**未打通，这是已知的最后一公里。** 实测结论：
+
+- 淘宝卖家后台是**独立登录体系**（`loginmyseller.taobao.com`），买家 cookie 进不去
+- 开放平台 `taobao.item.add.v2` 需要企业资质 + 类目授权
+- 因此 `PublishPipeline` 的 `direct` 模式明确拒绝，`draft` 只写本地草稿
+
+打通方式：有卖家账号时跑 `scripts/capture_publish.py`，它会录下真实的发布请求，
+把 endpoint 填进 `config/settings.yaml` 的 `taobao.publish_endpoint` 即可。
+
+**M2 能做**：类目匹配 → 人工确认 → 属性/品牌映射 → SKU 重建加价 → 生成载荷 → 存草稿。
+全程离线零网络。
+
 ---
 
 ## 2. 目录导航
