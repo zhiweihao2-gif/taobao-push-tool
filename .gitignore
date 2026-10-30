@@ -6,6 +6,15 @@
 config/cookies/*
 !config/cookies/.gitkeep
 
+# 浏览器持久化 profile（含所有网站登录态，最危险）
+config/browser_profile/
+config/*.storage.json
+
+# GitHub / 其他平台 token
+config/github_token.txt
+config/*token*
+config/*secret*
+
 # 采集到的数据、下载的图片视频
 data/*
 !data/mapping/*.yaml
