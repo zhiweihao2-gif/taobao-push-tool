@@ -1,0 +1,74 @@
+# 全局配置样例：复制为 config/settings.yaml 后修改
+paths:
+  data_dir: data
+  raw_dir: data/raw
+  items_dir: data/items
+  media_dir: data/media
+  mapping_dir: data/mapping
+  cookie_dir: config/cookies
+  db_path: data/app.db
+
+http:
+  timeout: 15
+  retries: 3
+  backoff_base: 2.0
+  user_agent_taobao: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
+  user_agent_pc: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+
+mtop:
+  app_key: "12574478"
+  hosts:
+    taobao: h5api.m.taobao.com
+    alibaba: h5api.m.1688.com
+  token_ttl: 86400          # 令牌缓存秒数
+  token_refresh_retries: 2
+
+ratelimit:
+  # 每平台每秒请求数（单账号）
+  taobao: 1.0
+  alibaba: 1.0
+  jd: 3.0
+  publish: 0.2
+
+media:
+  max_workers: 8
+  min_main_size: 800        # 主图最小边长
+  target_main_size: 800
+  detail_max_width: 750     # 详情图超过此宽度等比缩放
+  jpeg_quality: 92
+  strip_exif: true
+  crop_watermark_bottom: 0.0   # 0.08 = 裁掉底部 8%（仅详情图）
+  crop_watermark_right: 0.0    # 0.10 = 裁掉右侧 10%（仅详情图）
+  allowed_ext: [".jpg", ".jpeg", ".png", ".webp"]
+
+price:
+  mode: multiplier          # multiplier | fixed_add | copy
+  multiplier: 1.35
+  min_margin: 5.0
+  round_to: 0.01
+  clamp: [9.9, 99999.0]
+
+publish:
+  default_mode: draft       # draft | direct | dry_run
+  default_stock: 999
+  max_sku: 100
+
+sanitize:
+  max_title_length: 60
+  remove_patterns:
+    - "正品"
+    - "官方"
+    - "旗舰"
+    - "专卖"
+    - "最低价"
+    - "最便宜"
+    - "第一"
+    - "顶级"
+    - "国家级"
+    - "史上最低"
+    - "包邮"
+    - "秒杀"
+    - "清仓"
+    - "[0-9]{11}"
+    - "(微信|VX|vx|QQ)[:：]?\\s*\\S+"
+  fill_keywords: ["新款", "百搭"]

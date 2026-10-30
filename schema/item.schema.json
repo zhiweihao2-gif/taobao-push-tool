@@ -1,0 +1,156 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local/taobao/item.schema.json",
+  "title": "NormalizedItem",
+  "description": "跨平台统一的商品数据模型：采集层输出 RawItem，归一化层输出本模型，映射层基于本模型生成目标平台载荷。",
+  "type": "object",
+  "required": ["item_id", "platform", "title", "main_images", "skus", "category"],
+  "properties": {
+    "item_id": { "type": "string", "description": "源平台商品ID" },
+    "platform": { "type": "string", "enum": ["taobao", "tmall", "alibaba", "jd"] },
+    "source_url": { "type": "string" },
+    "collected_at": { "type": "string", "format": "date-time" },
+
+    "title": { "type": "string", "minLength": 1 },
+    "subtitle": { "type": "string" },
+    "seller": {
+      "type": "object",
+      "properties": {
+        "seller_id": { "type": "string" },
+        "nick": { "type": "string" },
+        "shop_name": { "type": "string" }
+      }
+    },
+
+    "category": {
+      "type": "object",
+      "required": ["cid"],
+      "properties": {
+        "cid": { "type": "string", "description": "源平台叶子类目ID" },
+        "path": { "type": "array", "items": { "type": "string" }, "description": "类目路径文本，用于相似度召回" },
+        "root_cid": { "type": "string" }
+      }
+    },
+
+    "price": {
+      "type": "object",
+      "properties": {
+        "min": { "type": "number" },
+        "max": { "type": "number" },
+        "currency": { "type": "string", "default": "CNY" },
+        "origin": { "type": "number", "description": "划线价/市场价" }
+      }
+    },
+
+    "main_images": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/image" },
+      "description": "主图，按展示顺序"
+    },
+    "detail_images": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/image" },
+      "description": "详情图文中的图片，按出现顺序"
+    },
+    "videos": {
+      "type": "array",
+      "description": "主图视频。淘宝实测结构见 docs/06 第 12 节",
+      "items": { "$ref": "#/$defs/video" }
+    },
+    "detail_html": { "type": "string", "description": "详情富文本原始 HTML" },
+    "video_url": { "type": "string" },
+
+    "sale_props": {
+      "type": "array",
+      "description": "销售属性（生成 SKU 的维度），顺序即目标平台期望顺序",
+      "items": {
+        "type": "object",
+        "required": ["pid", "name", "values"],
+        "properties": {
+          "pid": { "type": "string" },
+          "name": { "type": "string" },
+          "values": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["vid", "name"],
+              "properties": {
+                "vid": { "type": "string" },
+                "name": { "type": "string" },
+                "image": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "skus": {
+      "type": "array",
+      "description": "SKU 扁平表；attrs 为 pid -> vid 映射",
+      "items": {
+        "type": "object",
+        "required": ["sku_id", "attrs"],
+        "properties": {
+          "sku_id": { "type": "string" },
+          "attrs": { "type": "object", "additionalProperties": { "type": "string" } },
+          "prop_path": { "type": "string", "description": "原始 propPath，如 1627207:28320;20509:28314" },
+          "price": { "type": "number" },
+          "quantity": { "type": "integer" },
+          "image": { "type": "string" },
+          "outer_id": { "type": "string" }
+        }
+      }
+    },
+
+    "params": {
+      "type": "array",
+      "description": "参数表（非销售属性）",
+      "items": {
+        "type": "object",
+        "required": ["name", "value"],
+        "properties": {
+          "group": { "type": "string" },
+          "name": { "type": "string" },
+          "value": { "type": "string" }
+        }
+      }
+    },
+
+    "stock_total": { "type": "integer" },
+    "media_dir": { "type": "string", "description": "素材本地目录" },
+    "raw_ref": { "type": "string", "description": "原始响应文件路径，便于回溯" },
+    "extra": { "type": "object", "description": "平台特有字段原样保留" }
+  },
+  "$defs": {
+    "video": {
+      "type": "object",
+      "required": ["url"],
+      "description": "商品主图视频。淘宝直链形如 cloud.video.taobao.com/play/u/<userId>/p/2/e/6/t/1/<videoId>.mp4",
+      "properties": {
+        "url": { "type": "string", "description": "mp4 直链（带 appKey 参数）" },
+        "video_id": { "type": "string" },
+        "cover": { "type": "string", "description": "封面图 URL" },
+        "dimension": { "type": "string", "description": "画幅比，如 3:4 / 1:1 / 16:9" },
+        "duration": { "type": "number" },
+        "size_bytes": { "type": "integer" },
+        "local_path": { "type": "string" },
+        "sha256": { "type": "string" },
+        "role": { "type": "string", "enum": ["main", "detail"] }
+      }
+    },
+    "image": {
+      "type": "object",
+      "required": ["url"],
+      "properties": {
+        "url": { "type": "string", "description": "源 CDN URL（已补全 https、已去尺寸后缀）" },
+        "local_path": { "type": "string", "description": "转存后本地路径" },
+        "hosted_url": { "type": "string", "description": "上传图片空间后的 URL" },
+        "width": { "type": "integer" },
+        "height": { "type": "integer" },
+        "sha256": { "type": "string" },
+        "role": { "type": "string", "enum": ["main", "detail", "sku", "video_cover"] }
+      }
+    }
+  }
+}

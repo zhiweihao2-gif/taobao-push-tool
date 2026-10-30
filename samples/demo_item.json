@@ -1,0 +1,158 @@
+{
+  "item_id": "600000000001",
+  "platform": "taobao",
+  "source_url": "https://item.taobao.com/item.htm?id=600000000001",
+  "collected_at": "2026-10-30T14:12:40",
+  "title": "正品 官方 女士棉质连衣裙 2024新款 最便宜",
+  "subtitle": null,
+  "seller": {
+    "seller_id": "2200000000001",
+    "nick": "测试卖家",
+    "shop_name": "测试店铺"
+  },
+  "category": {
+    "cid": "50010850",
+    "path": [],
+    "root_cid": "16"
+  },
+  "price": {
+    "min": 129.0,
+    "max": 139.0,
+    "currency": "CNY",
+    "origin": null
+  },
+  "main_images": [
+    {
+      "url": "https://img.alicdn.com/imgextra/i1/main1.jpg",
+      "local_path": null,
+      "hosted_url": null,
+      "width": null,
+      "height": null,
+      "sha256": null,
+      "role": "main"
+    },
+    {
+      "url": "https://img.alicdn.com/imgextra/i1/main2.jpg",
+      "local_path": null,
+      "hosted_url": null,
+      "width": null,
+      "height": null,
+      "sha256": null,
+      "role": "main"
+    }
+  ],
+  "detail_images": [
+    {
+      "url": "https://img.alicdn.com/imgextra/i2/detail1.jpg",
+      "local_path": null,
+      "hosted_url": null,
+      "width": null,
+      "height": null,
+      "sha256": null,
+      "role": "detail"
+    },
+    {
+      "url": "https://img.alicdn.com/imgextra/i2/detail2.jpg",
+      "local_path": null,
+      "hosted_url": null,
+      "width": null,
+      "height": null,
+      "sha256": null,
+      "role": "detail"
+    }
+  ],
+  "detail_html": "<p>详情</p><img src=\"//img.alicdn.com/imgextra/i2/detail1.jpg\"><img data-ks-lazyload=\"//img.alicdn.com/imgextra/i2/detail2.jpg\">",
+  "video_url": "https://cloud.video.taobao.com/play/u/1/p/1/e/6/t/1/xxx.mp4",
+  "sale_props": [
+    {
+      "pid": "1627207",
+      "name": "颜色分类",
+      "values": [
+        {
+          "vid": "28320",
+          "name": "黑色",
+          "image": "https://img.alicdn.com/sku1.jpg"
+        },
+        {
+          "vid": "28321",
+          "name": "白色",
+          "image": ""
+        }
+      ]
+    },
+    {
+      "pid": "20509",
+      "name": "尺码",
+      "values": [
+        {
+          "vid": "28314",
+          "name": "S",
+          "image": ""
+        },
+        {
+          "vid": "28315",
+          "name": "M",
+          "image": ""
+        }
+      ]
+    }
+  ],
+  "skus": [
+    {
+      "sku_id": "5000000001",
+      "attrs": {
+        "1627207": "28320",
+        "20509": "28314"
+      },
+      "prop_path": "1627207:28320;20509:28314",
+      "price": 129.0,
+      "quantity": 50,
+      "image": null,
+      "outer_id": "5000000001"
+    },
+    {
+      "sku_id": "5000000002",
+      "attrs": {
+        "1627207": "28320",
+        "20509": "28315"
+      },
+      "prop_path": "1627207:28320;20509:28315",
+      "price": 129.0,
+      "quantity": 30,
+      "image": null,
+      "outer_id": "5000000002"
+    },
+    {
+      "sku_id": "5000000003",
+      "attrs": {
+        "1627207": "28321",
+        "20509": "28314"
+      },
+      "prop_path": "1627207:28321;20509:28314",
+      "price": 139.0,
+      "quantity": 20,
+      "image": null,
+      "outer_id": "5000000003"
+    }
+  ],
+  "params": [
+    {
+      "name": "品牌",
+      "value": "无品牌",
+      "group": "基本信息"
+    },
+    {
+      "name": "材质",
+      "value": "棉",
+      "group": "基本信息"
+    }
+  ],
+  "stock_total": 100,
+  "media_dir": null,
+  "raw_ref": "raw/taobao/600000000001.json",
+  "extra": {
+    "api_stack_keys": [
+      "descInfo"
+    ]
+  }
+}

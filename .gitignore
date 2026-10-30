@@ -1,0 +1,48 @@
+# ============================================================
+#  绝对不能提交的东西
+# ============================================================
+
+# 登录态（含 cookie / session / localStorage）—— 泄露等于账号被接管
+config/cookies/*
+!config/cookies/.gitkeep
+
+# 采集到的数据、下载的图片视频
+data/*
+!data/mapping/*.yaml
+!data/mapping/*.yml
+
+# 逆向分析产物（第三方扩展的源码，仅供本地研究，不要公开分发）
+analysis/
+
+# 本地配置（可能含 key）
+config/settings.yaml
+
+# ============================================================
+#  常规忽略
+# ============================================================
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.env
+.env.*
+
+# 编辑器 / 系统
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 日志与临时文件
+*.log
+*.tmp
+links.txt
+*.csv
+!docs/**/*.csv
+
+# 测试产物
+.pytest_cache/
+.coverage
+htmlcov/
