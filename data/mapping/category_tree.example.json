@@ -1,0 +1,178 @@
+{
+  "_comment": "类目树样例。结构照抄即可，用 dump_tree() 可从真实来源导出。pid/vid 取自实测淘宝商品 1073025553052。",
+  "platform": "taobao",
+  "source": "local_json",
+  "fetched_at": "2026-10-30T18:00:00",
+  "nodes": [
+    {
+      "cid": "50023905",
+      "name": "交换机",
+      "path": ["网络设备/网络相关", "网络设备", "交换机"],
+      "parent_cid": "50023904",
+      "is_leaf": true,
+      "props": [
+        {
+          "pid": "20000",
+          "name": "品牌",
+          "required": true,
+          "is_key": true,
+          "type": "brand",
+          "values": [
+            { "vid": "brand_dahua", "name": "Dahua", "aliases": ["大华", "大华股份"] },
+            { "vid": "brand_hikvision", "name": "Hikvision", "aliases": ["海康", "海康威视"] },
+            { "vid": "brand_tp_link", "name": "TP-LINK", "aliases": ["普联", "tplink"] }
+          ]
+        },
+        {
+          "pid": "1627207",
+          "name": "颜色分类",
+          "required": true,
+          "is_sale": true,
+          "type": "select",
+          "values": [
+            { "vid": "44467701705", "name": "【百兆非POE交换机】", "aliases": ["百兆", "百兆非POE"] },
+            { "vid": "44467701706", "name": "【千兆非POE交换机】", "aliases": ["千兆", "千兆非POE"] }
+          ]
+        },
+        {
+          "pid": "4054020",
+          "name": "端口总数",
+          "required": true,
+          "is_sale": true,
+          "type": "select",
+          "values": [
+            { "vid": "43502", "name": "5个", "aliases": ["5口", "5"] },
+            { "vid": "15295387", "name": "8个", "aliases": ["8口", "8"] }
+          ]
+        },
+        {
+          "pid": "122216608",
+          "name": "是否支持VLAN",
+          "required": false,
+          "is_key": false,
+          "type": "select",
+          "values": [
+            { "vid": "vlan_no", "name": "不支持" },
+            { "vid": "vlan_yes", "name": "支持" }
+          ]
+        },
+        {
+          "pid": "4130108",
+          "name": "传输速度",
+          "required": false,
+          "type": "select",
+          "values": [
+            { "vid": "speed_100", "name": "100Mbps" },
+            { "vid": "speed_1000", "name": "1000Mbps" }
+          ]
+        }
+      ]
+    },
+    {
+      "cid": "50010850",
+      "name": "连衣裙",
+      "path": ["女装/女士精品", "连衣裙"],
+      "parent_cid": "16",
+      "is_leaf": true,
+      "props": [
+        {
+          "pid": "20000",
+          "name": "品牌",
+          "required": true,
+          "is_key": true,
+          "type": "brand",
+          "values": [
+            { "vid": "brand_none", "name": "其他/other", "aliases": ["无品牌", "other"] }
+          ]
+        },
+        {
+          "pid": "1627207",
+          "name": "颜色分类",
+          "required": true,
+          "is_sale": true,
+          "type": "select",
+          "values": [
+            { "vid": "28320", "name": "黑色", "aliases": ["黑"] },
+            { "vid": "28321", "name": "白色", "aliases": ["白"] },
+            { "vid": "28322", "name": "红色", "aliases": ["红"] }
+          ]
+        },
+        {
+          "pid": "20509",
+          "name": "尺码",
+          "required": true,
+          "is_sale": true,
+          "type": "select",
+          "values": [
+            { "vid": "28314", "name": "S" },
+            { "vid": "28315", "name": "M" },
+            { "vid": "28316", "name": "L" },
+            { "vid": "28317", "name": "XL" }
+          ]
+        },
+        {
+          "pid": "20010",
+          "name": "材质成分",
+          "required": false,
+          "is_key": true,
+          "type": "select",
+          "values": [
+            { "vid": "mat_cotton", "name": "棉", "aliases": ["纯棉", "100%棉", "全棉"] },
+            { "vid": "mat_polyester", "name": "聚酯纤维", "aliases": ["涤纶"] }
+          ]
+        }
+      ]
+    },
+    {
+      "cid": "50000671",
+      "name": "T恤",
+      "path": ["女装/女士精品", "T恤"],
+      "parent_cid": "16",
+      "is_leaf": true,
+      "props": [
+        {
+          "pid": "20000",
+          "name": "品牌",
+          "required": true,
+          "is_key": true,
+          "type": "brand",
+          "values": [
+            { "vid": "brand_none", "name": "其他/other", "aliases": ["无品牌"] }
+          ]
+        },
+        {
+          "pid": "1627207",
+          "name": "颜色分类",
+          "required": true,
+          "is_sale": true,
+          "type": "select",
+          "values": [
+            { "vid": "28320", "name": "黑色" },
+            { "vid": "28321", "name": "白色" }
+          ]
+        },
+        {
+          "pid": "20509",
+          "name": "尺码",
+          "required": true,
+          "is_sale": true,
+          "type": "select",
+          "values": [
+            { "vid": "28314", "name": "S" },
+            { "vid": "28315", "name": "M" },
+            { "vid": "28316", "name": "L" }
+          ]
+        }
+      ]
+    },
+    {
+      "_comment": "非叶类目，匹配时必须被跳过",
+      "cid": "16",
+      "name": "女装/女士精品",
+      "path": ["女装/女士精品"],
+      "parent_cid": "0",
+      "is_leaf": false,
+      "props": []
+    }
+  ]
+}

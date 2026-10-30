@@ -82,12 +82,35 @@ class TaobaoPublisher(BasePublisher):
 
     # ------------------------------------------------------------ 提交
     def submit(self, payload: dict) -> PublishResult:
-        if self.channel == "backend":
-            return self._submit_backend(payload)
-        return self._submit_open_api(payload)
+        """**M2 起禁用直连提交。**
+
+        复审 blocker：配置了开放平台凭据时，这个方法会真的 ``httpx.post`` 提交商品。
+        发布必须在离线流水线（``src/publish/pipeline.py``）里完成，
+        真实提交要等发布接口验证通过后单独开放。
+
+        所以这里无条件拒绝，且**在任何网络调用之前**拒绝。
+        """
+        return PublishResult(
+            ok=False, target=self.target, mode=self.mode,
+            error_code="CHANNEL_DISABLED",
+            error_msg=(
+                "TaobaoPublisher 的直连提交通道已禁用（M2 起发布统一走 "
+                "PublishPipeline 的 dry_run / draft 模式）。"
+                "真实提交需要先验证发布接口，不在当前范围内。"),
+            raw_response={"payload_preview": {k: str(v)[:120]
+                                              for k, v in payload.items()}},
+        )
 
     # -------------------------------------------------------- 通道 A
     def _submit_open_api(self, payload: dict) -> PublishResult:
+        # 复审 blocker：直连提交一律禁用，先于任何网络调用返回
+        return PublishResult(
+            ok=False, target=self.target, mode=self.mode,
+            error_code="CHANNEL_DISABLED",
+            error_msg="直连提交通道已禁用（M2 起发布统一走 PublishPipeline）",
+        )
+
+        # ---- 以下为待验证的原始实现，当前不可达 ----
         if not (self.app_key and self.app_secret and self.session_key):
             return PublishResult(
                 ok=False, target=self.target, mode=self.mode,
@@ -139,6 +162,14 @@ class TaobaoPublisher(BasePublisher):
         2. 先 GET 发布页初始化接口，拿 csrf 与属性元数据
         3. POST 发布载荷；遇 x5sec 响应时走 Playwright 过一次滑块后回写 Cookie
         """
+        # 复审 blocker：直连提交一律禁用，先于任何网络调用返回
+        return PublishResult(
+            ok=False, target=self.target, mode=self.mode,
+            error_code="CHANNEL_DISABLED",
+            error_msg="直连提交通道已禁用（M2 起发布统一走 PublishPipeline）",
+        )
+
+        # ---- 以下为待验证的原始实现，当前不可达 ----
         s = get_settings()
         state_file = Path(s.cookie_dir) / f"{self.shop}.json"
         if not state_file.exists():

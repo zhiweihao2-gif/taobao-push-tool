@@ -44,6 +44,16 @@ CREATE TABLE IF NOT EXISTS publish_logs (
   ok INTEGER, target_item_id TEXT, error_code TEXT, error_msg TEXT,
   request TEXT, response TEXT, created_at TEXT
 );
+CREATE TABLE IF NOT EXISTS drafts (
+  draft_id TEXT PRIMARY KEY,
+  item_id TEXT NOT NULL,
+  target TEXT NOT NULL,
+  channel TEXT NOT NULL,
+  target_cid TEXT,
+  payload TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_drafts_item ON drafts(item_id, target);
 CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
 """
 
@@ -166,6 +176,68 @@ def finish_task(tid: str, ok: bool, error: str | None = None, max_attempts: int 
             "UPDATE tasks SET status=?, error=?, updated_at=? WHERE id=?",
             (status, error, _now(), tid),
         )
+
+
+# ---------------------------------------------------------------- drafts
+
+
+def save_draft(item_id: str, target: str, channel: str,
+               target_cid: str | None, payload: dict[str, Any]) -> str:
+    """保存一条本地草稿，返回 draft_id。
+
+    M2 的 `draft` 模式只落到本地表，不碰任何远端接口。
+    """
+    draft_id = uuid.uuid4().hex[:16]
+    with _lock, connect() as conn:
+        conn.execute(
+            """INSERT INTO drafts(draft_id, item_id, target, channel, target_cid,
+                                  payload, created_at)
+               VALUES(?,?,?,?,?,?,?)""",
+            (draft_id, item_id, target, channel, target_cid,
+             json.dumps(payload, ensure_ascii=False), _now()),
+        )
+    return draft_id
+
+
+def get_draft(draft_id: str) -> dict[str, Any] | None:
+    with _lock, connect() as conn:
+        row = conn.execute("SELECT * FROM drafts WHERE draft_id=?",
+                           (draft_id,)).fetchone()
+    if not row:
+        return None
+    out = dict(row)
+    try:
+        out["payload"] = json.loads(out["payload"])
+    except Exception:
+        pass
+    return out
+
+
+def list_drafts(limit: int = 100) -> list[dict[str, Any]]:
+    with _lock, connect() as conn:
+        rows = conn.execute(
+            "SELECT * FROM drafts ORDER BY created_at DESC LIMIT ?", (limit,)
+        ).fetchall()
+    out = []
+    for r in rows:
+        d = dict(r)
+        try:
+            d["payload"] = json.loads(d["payload"])
+        except Exception:
+            pass
+        out.append(d)
+    return out
+
+
+def count_drafts() -> int:
+    with _lock, connect() as conn:
+        return int(conn.execute("SELECT COUNT(*) FROM drafts").fetchone()[0])
+
+
+def delete_draft(draft_id: str) -> bool:
+    with _lock, connect() as conn:
+        cur = conn.execute("DELETE FROM drafts WHERE draft_id=?", (draft_id,))
+        return cur.rowcount > 0
 
 
 # ---------------------------------------------------------------- publish log

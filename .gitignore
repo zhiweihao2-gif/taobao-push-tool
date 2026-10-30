@@ -16,9 +16,24 @@ config/*token*
 config/*secret*
 
 # 采集到的数据、下载的图片视频
-data/*
+# 注意：不能用 data/* —— 那会把 data/mapping/ 整个目录也忽略掉，
+# 而 !data/mapping/ 无法恢复「父目录已被忽略」的子项。所以显式列出要忽略的。
+data/raw/
+data/items/
+data/media/
+data/app.db
+data/app.db-journal
+data/*.csv
+data/*.log
+
+# 映射层配置模板**要提交**（M2 的核心资产，新环境开箱可用）
+!data/mapping/
 !data/mapping/*.yaml
 !data/mapping/*.yml
+!data/mapping/*.json
+
+# pair 工具工作区（Codex 规划/复审记录，含会话状态，不入库）
+.pair/
 
 # 逆向分析产物（第三方扩展的源码，仅供本地研究，不要公开分发）
 analysis/

@@ -1,0 +1,30 @@
+# 类目映射表：源平台叶子类目 → 目标平台叶子类目
+# 结构： "<src>-><tgt>": { "<src_cid>": { target_cid, target_path, confidence, verified } }
+# 用法：先跑 /map/candidates 拿候选，人工确认后 /map/confirm 写回本文件（verified: true）
+# 同一源类目确认一次，后续所有同源类目商品自动复用。
+
+taobao->taobao:
+  "50010850":
+    target_cid: "50010850"
+    target_path: "女装/女士精品 > 连衣裙"
+    confidence: 1.0
+    verified: true
+
+taobao->jd:
+  "50010850":
+    target_cid: "1319"
+    target_path: "女装 > 连衣裙"
+    confidence: 0.92
+    verified: true
+
+1688->taobao:
+  "1033559":
+    target_cid: "50010850"
+    target_path: "女装/女士精品 > 连衣裙"
+    confidence: 0.95
+    verified: true
+  "121400001":
+    target_cid: "50000671"
+    target_path: "女装/女士精品 > T恤"
+    confidence: 0.88
+    verified: false

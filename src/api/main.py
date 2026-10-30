@@ -13,10 +13,14 @@ from ..core.models import Item
 from ..core.storage import (enqueue, list_items, load_item, log_publish,
                             save_item, save_raw)
 from ..media.downloader import MediaPipeline
-from ..normalize.mapper import CategoryMapper, PriceEngine
-from ..publish.taobao_pub import TaobaoPublisher
+from ..normalize.mapper import PriceEngine
 
 app = FastAPI(title="一键铺货 API", version="0.1.0")
+
+# M2 映射 / 发布接口（独立 router，不改动本文件已有路由）
+from .mapping_api import router as mapping_router  # noqa: E402
+
+app.include_router(mapping_router)
 
 COLLECTORS = {
     "taobao": TaobaoCollector,
@@ -86,42 +90,7 @@ def item_detail(item_id: str) -> Item:
     return item
 
 
-@app.post("/map/candidates")
-def map_candidates(req: MapReq) -> dict:
-    mapper = CategoryMapper()
-    item = load_item(req.src_cid)
-    if not item:
-        raise HTTPException(404, "source item not found (src_cid 传已采集的 item_id)")
-    tree_path = CategoryMapper().path.parent / f"category_tree_{req.target_platform}.json"
-    tree = []
-    if tree_path.exists():
-        import json
-        tree = json.loads(tree_path.read_text(encoding="utf-8"))
-    return {"candidates": mapper.candidates(item.category.path, tree)}
 
-
-@app.post("/map/confirm")
-def map_confirm(req: MapReq) -> dict:
-    CategoryMapper().remember(req.src_platform, req.target_platform, req.src_cid,
-                              req.target_cid, req.target_path)
-    return {"ok": True}
-
-
-@app.post("/publish")
-def publish(req: PublishReq) -> dict:
-    item = load_item(req.item_id)
-    if not item:
-        raise HTTPException(404, "item not found")
-    if req.target == "taobao":
-        publisher = TaobaoPublisher(shop=req.shop, mode=req.mode)
-    else:
-        raise HTTPException(400, "jd publisher 见 src/publish/jd_pub.py（按同样模式实现）")
-
-    payload = publisher.build_payload(item, req.target_cid)
-    result = publisher.publish(item, req.target_cid)
-    log_publish(item.item_id, req.target, req.shop, req.mode, result, request=payload)
-    return {"result": result.model_dump(), "payload_preview": {
-        k: (str(v)[:200]) for k, v in payload.items()}}
 
 
 @app.post("/queue/collect")

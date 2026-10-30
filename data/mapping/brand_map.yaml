@@ -1,0 +1,32 @@
+# 品牌映射表：源品牌名 → 目标平台品牌 ID
+#
+# 铁律：**没命中时必须置空（brand_id = null），绝不自造品牌 ID。**
+# 乱填品牌 = 侵权投诉 + 直接下架，比"没品牌"严重得多。
+#
+# 两种写法都支持：
+#   Dahua: {vid: brand_dahua, name: Dahua}     # 带名称，推荐
+#   Dahua: brand_dahua                          # 简写，name 用 key
+
+Dahua:
+  vid: brand_dahua
+  name: Dahua
+大华: brand_dahua
+大华股份: brand_dahua
+
+Hikvision:
+  vid: brand_hikvision
+  name: Hikvision
+海康: brand_hikvision
+海康威视: brand_hikvision
+
+TP-LINK:
+  vid: brand_tp_link
+  name: TP-LINK
+普联: brand_tp_link
+tplink: brand_tp_link
+
+# 明确表示"无品牌"的商品用它，而不是留空
+其他/other:
+  vid: brand_none
+  name: 其他/other
+无品牌: brand_none

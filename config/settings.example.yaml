@@ -53,6 +53,26 @@ publish:
   default_stock: 999
   max_sku: 100
 
+# 目标平台类目树来源链：按顺序尝试，第一个成功的就用。
+# local_json 无需任何资质，是 M2 的主力；open_api 需要开放平台资质与类目授权；
+# page 需要登录态且页面结构稳定（未验证，默认关闭）。
+category_tree:
+  sources:
+    - type: local_json
+      path: data/mapping/category_tree.example.json
+    - type: open_api
+    - type: page
+      enabled: false
+
+# 类目匹配打分权重（合计 1.0）
+category_match:
+  weights:
+    title: 0.5          # 商品标题与类目名的词重合
+    params: 0.3         # 参数表名值命中类目属性
+    sale_props: 0.2     # 销售属性名命中
+  top_n: 5
+  min_score: 0.25       # 低于此分不进候选
+
 sanitize:
   max_title_length: 60
   remove_patterns:

@@ -1,0 +1,57 @@
+# 属性映射表：源 pid / 值 → 目标平台 pid / vid
+# fallback 策略：drop（丢弃该属性）| default（用类目默认值）| ask（挂起等人工）
+
+taobao->taobao:
+  sale_props:
+    "1627207":            # 颜色分类
+      target_pid: "1627207"
+      target_name: "颜色分类"
+      value_map:
+        "28320": {"vid": "28320", "name": "黑色"}
+        "28321": {"vid": "28321", "name": "白色"}
+      fallback: ask
+    "20509":              # 尺码
+      target_pid: "20509"
+      target_name: "尺码"
+      value_map:
+        "28314": {"vid": "28314", "name": "S"}
+        "28315": {"vid": "28315", "name": "M"}
+        "28316": {"vid": "28316", "name": "L"}
+      fallback: ask
+
+taobao->jd:
+  sale_props:
+    "1627207":
+      target_pid: "1000000016"
+      target_name: "颜色"
+      value_map:
+        "28320": {"vid": "1000000017", "name": "黑色"}
+        "28321": {"vid": "1000000018", "name": "白色"}
+      fallback: drop
+    "20509":
+      target_pid: "1000000017"
+      target_name: "尺码"
+      value_map:
+        "28314": {"vid": "1000000101", "name": "S"}
+        "28315": {"vid": "1000000102", "name": "M"}
+        "28316": {"vid": "1000000103", "name": "L"}
+      fallback: drop
+
+  key_props:
+    "品牌":
+      target_pid: "1000000001"
+      type: brand          # 特殊：走 brand_map 查目标平台品牌 ID
+    "材质":
+      target_pid: "1000000002"
+      value_map:
+        "棉": "棉"
+        "纯棉": "棉"
+        "100%棉": "棉"
+
+1688->taobao:
+  sale_props:
+    "prop0":
+      target_pid: "1627207"
+      target_name: "颜色分类"
+      value_map: {}
+      fallback: ask
