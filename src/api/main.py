@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 
 from ..collect.alibaba import Alibaba1688Collector
 from ..collect.jd import JDCollector
+from ..collect.resolve import ResolveError, resolve_item_id
 from ..collect.taobao import TaobaoCollector
 from ..core.models import Item
 from ..core.storage import (enqueue, list_items, load_item, log_publish,
@@ -77,9 +78,18 @@ def collect(req: CollectReq) -> dict:
     cls = COLLECTORS.get(req.platform)
     if not cls:
         raise HTTPException(400, f"unsupported platform: {req.platform}")
+
+    # 先把「链接 / 短链 / 推广链 / 纯数字」统一解析成商品 ID。
+    # 之前这里直接用 req.item_id，用户粘完整 URL 时会拿 URL 当 ID，
+    # 最后崩在「文件名语法不正确」上。
+    try:
+        item_id = resolve_item_id(req.item_id, req.platform)
+    except ResolveError as e:
+        raise HTTPException(400, str(e)) from e
+
     collector = cls()
     try:
-        raw = collector.fetch(req.item_id)
+        raw = collector.fetch(item_id)
         save_raw(raw)
         item = collector.to_item(raw)
         if req.download_media:

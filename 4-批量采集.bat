@@ -43,12 +43,12 @@ echo.
 "%PY%" run_demo.py --platform taobao --batch links.txt --skip-existing --delay 3 --with-detail
 
 echo.
-echo Exporting summary to data\商品汇总.csv ...
+echo Exporting summary CSV ...
 "%PY%" scripts\export_csv.py
 
 echo.
 echo ==================================================
-echo   Done. Summary file: data\商品汇总.csv
+echo   Done. Summary CSV is in data folder.
 echo   Images: data\media\^<item_id^>\
 echo ==================================================
 pause

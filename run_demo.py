@@ -20,6 +20,7 @@ import httpx
 
 from src.collect.alibaba import Alibaba1688Collector
 from src.collect.jd import JDCollector
+from src.collect.resolve import ResolveError, resolve_item_id
 from src.collect.ratelimit import CooldownActive, RateLimiter
 from src.collect.taobao import TaobaoCollector
 from src.core.config import get_settings
@@ -51,72 +52,6 @@ ID_PATTERNS = (
 )
 
 
-def _dig_id(text: str) -> str | None:
-    for pat in ID_PATTERNS:
-        m = re.search(pat, text)
-        if m:
-            return m.group(1)
-    return None
-
-
-def _follow(url: str, max_hops: int = 4) -> str:
-    """跟随跳转，从最终 URL 或页面内容里挖出商品 ID。"""
-    with httpx.Client(timeout=20, follow_redirects=True,
-                      headers={"User-Agent": UA}) as c:
-        r = c.get(url)
-        found = _dig_id(str(r.url))
-        if found:
-            return found
-        # 推广链接常在页面里塞一段跳转 JS
-        found = _dig_id(r.text[:20000])
-        if found:
-            return found
-        for pat in (r'item\.taobao\.com/item\.htm\?id=(\d+)',
-                    r'detail\.tmall\.com/item\.htm\?id=(\d+)',
-                    r'detail\.1688\.com/offer/(\d+)',
-                    r'item\.jd\.com/(\d+)'):
-            m = re.search(pat, r.text)
-            if m:
-                return m.group(1)
-    raise ValueError(
-        "这个链接里找不到商品 ID（可能是淘宝客推广链接、店铺首页或已失效）。\n"
-        "  请打开商品详情页，复制浏览器地址栏里那种带 id= 的链接，例如：\n"
-        "  https://item.taobao.com/item.htm?id=123456789"
-    )
-
-
-def resolve_item_id(text: str, platform: str) -> str:
-    """把「商品 ID / 商品链接 / 短链 / 推广链」统一解析成纯数字 ID。"""
-    text = (text or "").strip().lstrip("\ufeff").strip().strip('"').strip("'").strip()
-    if not text:
-        raise ValueError("没有输入内容")
-
-    # 1. 纯数字
-    if text.isdigit():
-        return text
-
-    # 2. 链接里直接有 id=
-    found = _dig_id(text)
-    if found and ("://" in text or text.startswith("//") or "?" in text):
-        return found
-
-    # 3. 需要跟随跳转的链接
-    if "://" in text or text.startswith("//") or "." in text.split("/")[0]:
-        url = text if "://" in text else "https://" + text.lstrip("/")
-        host = (urlparse(url).hostname or "").lower()
-        try:
-            return _follow(url)
-        except ValueError:
-            raise
-        except Exception as e:
-            raise ValueError(f"访问链接失败（{type(e).__name__}）：{url[:80]}") from e
-
-    raise ValueError(
-        f"看不懂这个输入：{text[:60]}\n"
-        "  请粘贴商品详情页链接（带 id= 的那种），或直接输入数字 ID。"
-    )
-
-
 def run_one(platform: str, item_id: str, media: bool, detail: bool,
             publish: bool, mode: str, target_cid: str | None,
             render_desc: bool = False) -> bool:
@@ -128,7 +63,13 @@ def run_one(platform: str, item_id: str, media: bool, detail: bool,
     if status is not None and not status.ok:
         missing = f" 缺失: {status.missing}" if status.missing else ""
         print(f"      ! 登录态 {status.reason}{missing}")
-        print(f"        → 先执行: python scripts/login.py --platform {platform}")
+        # 登录态明确不可用时直接拒绝，不发请求。
+        # 否则会白挨一次风控（实测：过期 cookie 请求 → RGV587 → 熔断 15 分钟）。
+        if status.reason in ("NO_COOKIE_FILE", "STALE", "INCOMPLETE"):
+            print(f"      → 已跳过，未发起任何请求（避免白挨风控）")
+            print(f"      → 双击 1-登录{platform}相关启动器 重新扫码，或执行：")
+            print(f"        python scripts/login.py --platform {platform}")
+            return False
 
     raw = collector.fetch(item_id)
     save_raw(raw)

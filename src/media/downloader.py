@@ -35,6 +35,7 @@ from PIL import Image as PILImage
 from PIL import ImageOps
 
 from ..core.config import get_settings
+from ..core.storage import safe_name
 from ..core.models import Image, Item, Video
 
 # Pillow 9.1 起 LANCZOS 迁到 Image.Resampling，这里兼容两代写法

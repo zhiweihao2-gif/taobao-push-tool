@@ -154,6 +154,16 @@ def main() -> int:
             say("✓ 登录成功，cookie 已保存")
             say(f"  文件：{store.path(platform, shop=args.shop)}")
             say(f"  共 {len(cookies)} 个 cookie，体检：OK")
+            # 登录态刷新了，把之前因登录过期导致的冷却一并解除
+            try:
+                from src.collect.ratelimit import RateLimiter
+                lim = RateLimiter(platform)
+                before = lim.cooldown_remaining()
+                if before > 0:
+                    lim.reset_cooldown()
+                    say(f"  已自动解除冷却（原剩余 {before / 60:.0f} 分钟）")
+            except Exception:
+                pass
         else:
             say("！cookie 已保存，但看起来登录还没完成")
             say(f"  体检结果：{status.reason}" +

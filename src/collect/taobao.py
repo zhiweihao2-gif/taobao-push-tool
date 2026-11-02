@@ -166,6 +166,26 @@ class TaobaoCollector(BaseCollector):
                 outer_id=sid,
             ))
 
+        # 单规格兜底：skuBase.skus 为空时，价格/库存在 sku2info["0"] 里。
+        # 实测商品 630278968130（304不锈钢垫片）：skuBase.props/skus 都是 0 条，
+        # 但 sku2info["0"] = {price:{priceText:"10"}, quantity:"200"}。
+        # 不补这一步，单规格商品的价格和库存会整个丢失。
+        single_sku_used = False
+        if not skus:
+            default = sku2info.get("0") or {}
+            if default:
+                price_txt = dig(default, "price.priceText", "price.priceMoney",
+                                default=None)
+                qty = dig(default, "quantity", default=None)
+                skus.append(Sku(
+                    sku_id=raw.item_id,
+                    attrs={},
+                    price=_to_float(price_txt),
+                    quantity=_to_int(qty),
+                    outer_id=raw.item_id,
+                ))
+                single_sku_used = True
+
         # 价格区间
         prices = [s.price for s in skus if s.price]
         price_info = PriceInfo(

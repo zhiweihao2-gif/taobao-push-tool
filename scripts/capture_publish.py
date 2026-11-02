@@ -27,7 +27,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "data" / "publish_capture"
 
-PUBLISH_URL = "https://sell.taobao.com/auction/publish/publish.htm"
+# 当前可用的发布页（2026-11 实测 302 到登录，说明地址有效）
+PUBLISH_URL = "https://item.upload.taobao.com/sell/v2/publish.htm"
+# 备选：老版入口，部分账号还能进
+PUBLISH_URL_FALLBACK = "https://sell.taobao.com/auction/publish/publish.htm"
 
 # 关心的请求特征
 INTEREST = re.compile(

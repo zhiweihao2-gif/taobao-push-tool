@@ -102,6 +102,10 @@ https://m.tb.cn/h.xxxxx"></textarea>
       <button id="btnMap" disabled>批量匹配类目</button>
       <button id="btnPrepare" disabled>批量生成载荷（dry_run）</button>
       <button id="btnDraft" disabled>批量存草稿</button>
+    </div>
+    <div class="row">
+      <label class="hint" for="manualCid">目标类目 cid（自动匹配失败时手填，填了就全部用它）：</label>
+      <input id="manualCid" placeholder="例如 50023905" style="width:160px;padding:6px 10px;border:1px solid var(--line);border-radius:8px;font:inherit">
       <span class="hint" id="actionHint"></span>
     </div>
   </section>
@@ -153,8 +157,39 @@ async function api(path, body) {
   const text = await r.text();
   let data;
   try { data = JSON.parse(text); } catch { data = { raw: text }; }
-  if (!r.ok) throw new Error(data.detail || data.raw || `HTTP ${r.status}`);
+  if (!r.ok) throw new Error(friendlyError(data.detail || data.raw || `HTTP ${r.status}`));
   return data;
+}
+
+// 把后端异常翻译成人话
+function friendlyError(msg) {
+  const s = String(msg);
+  if (/CooldownActive|处于冷却期/.test(s)) {
+    const m = s.match(/(\d+(?:\.\d+)?)\s*分钟/);
+    return `被限流了，需要等 ${m ? m[1] : '十几'} 分钟。别重试，重试会让冷却变长。`;
+  }
+  if (/RISK_CONTROL|RGV587/.test(s)) {
+    return '淘宝风控拦截：登录态可能过期了，双击 1-登录淘宝.bat 重新扫码。';
+  }
+  if (/SLIDER_REQUIRED|x5sec/.test(s)) {
+    return '需要过滑块：请求太频繁，等 10~30 分钟，或重新登录换一份登录态。';
+  }
+  if (/SESSION_EXPIRED|FAIL_SYS_SESSION/.test(s)) {
+    return '登录态过期：双击 1-登录淘宝.bat 重新扫码。';
+  }
+  if (/找不到商品 ID|推广链接/.test(s)) {
+    return '链接里没有商品 ID。请复制浏览器地址栏里带 id= 的链接，或直接输入数字 ID。';
+  }
+  if (/商品未采集|not found|404/.test(s)) {
+    return '这个商品还没采集过，先点【开始采集】。';
+  }
+  if (/CATEGORY_NOT_MATCHED|类目未确定/.test(s)) {
+    return '没能自动匹配到类目，需要先人工指定。';
+  }
+  if (/BACKEND_ENDPOINT_UNCONFIGURED/.test(s)) {
+    return '后台发布接口还没配置（这是已知限制，需要卖家账号抓包）。';
+  }
+  return s.length > 120 ? s.slice(0, 120) + '…' : s;
 }
 
 function render() {
@@ -232,12 +267,21 @@ async function doCollect() {
 
 async function doMap() {
   setBusy(true, '匹配类目中…');
+  const manual = ($('manualCid').value || '').trim();
   for (const it of state.items) {
     if (it.status !== 'ok') continue;
+    if (manual) {
+      it.category = { ok: true, target_cid: manual, status: 'ok', source: 'manual' };
+      it.note = '手动指定类目';
+      render();
+      continue;
+    }
     try {
       const r = await api('/map/category', { item_id: it.item_id, target_platform: 'taobao' });
       it.category = r;
-      it.note = r.ok ? '已确认' : (r.candidates?.length ? `候选 ${r.candidates.length} 个` : '无候选');
+      it.note = r.ok ? '已确认'
+        : (r.candidates?.length ? `候选 ${r.candidates.length} 个`
+        : '无候选 — 类目树里没有匹配的，请在右边手动填 cid');
       log(`类目 ${it.item_id}: ${r.status} ${r.target_cid || (r.candidates?.[0]?.cid ?? '')}`);
     } catch (e) {
       it.note = '映射失败';
@@ -245,15 +289,16 @@ async function doMap() {
     }
     render();
   }
-  setBusy(false, '类目匹配完成');
+  setBusy(false, manual ? `已全部指定为 ${manual}` : '类目匹配完成');
 }
 
 async function doPrepare() {
   setBusy(true, '生成载荷中…');
   for (const it of state.items) {
     if (it.status !== 'ok') continue;
-    const cid = it.category?.target_cid || it.category?.candidates?.[0]?.cid;
-    if (!cid) { it.note = '无目标类目'; render(); continue; }
+    const cid = ($('manualCid').value || '').trim()
+      || it.category?.target_cid || it.category?.candidates?.[0]?.cid;
+    if (!cid) { it.note = '无目标类目 — 请在上面手填 cid'; render(); continue; }
     try {
       const r = await api('/publish/prepare', {
         item_id: it.item_id, target_platform: 'taobao',
@@ -275,8 +320,9 @@ async function doDraft() {
   setBusy(true, '存草稿中…');
   for (const it of state.items) {
     if (it.status !== 'ok') continue;
-    const cid = it.category?.target_cid || it.category?.candidates?.[0]?.cid;
-    if (!cid) { it.note = '无目标类目'; render(); continue; }
+    const cid = ($('manualCid').value || '').trim()
+      || it.category?.target_cid || it.category?.candidates?.[0]?.cid;
+    if (!cid) { it.note = '无目标类目 — 请在上面手填 cid'; render(); continue; }
     try {
       const r = await api('/publish/draft', {
         item_id: it.item_id, target_platform: 'taobao',
