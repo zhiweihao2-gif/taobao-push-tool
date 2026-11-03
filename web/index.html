@@ -47,6 +47,17 @@
   button.primary:hover:not(:disabled) { background: #1d4ed8; color: #fff; }
   button:disabled { opacity: .45; cursor: not-allowed; }
   .hint { color: var(--muted); font-size: 12px; }
+  .catpick { position: relative; display: inline-block; }
+  .catpick input { width: 280px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; font: inherit; }
+  .catdrop { position: absolute; z-index: 30; top: 100%; left: 0; right: 0; max-height: 320px; overflow: auto;
+             background: #fff; border: 1px solid var(--line); border-radius: 8px; margin-top: 4px;
+             box-shadow: 0 8px 24px rgba(0,0,0,.12); }
+  .catdrop .ci { padding: 8px 10px; cursor: pointer; border-bottom: 1px solid #f2f4f7; font-size: 13px; }
+  .catdrop .ci:last-child { border-bottom: 0; }
+  .catdrop .ci:hover, .catdrop .ci.on { background: #eef4ff; }
+  .catdrop .ci b { display: block; font-weight: 600; }
+  .catdrop .ci span { color: var(--muted); font-size: 12px; }
+  .catdrop .ce { padding: 12px 10px; color: var(--muted); font-size: 12px; text-align: center; }
   table { width: 100%; border-collapse: collapse; font-size: 13px; }
   th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); }
   th { color: var(--muted); font-weight: 500; font-size: 12px; white-space: nowrap; }
@@ -104,8 +115,13 @@ https://m.tb.cn/h.xxxxx"></textarea>
       <button id="btnDraft" disabled>批量存草稿</button>
     </div>
     <div class="row">
-      <label class="hint" for="manualCid">目标类目 cid（自动匹配失败时手填，填了就全部用它）：</label>
-      <input id="manualCid" placeholder="例如 50023905" style="width:160px;padding:6px 10px;border:1px solid var(--line);border-radius:8px;font:inherit">
+      <label class="hint" for="catSearch">目标类目（搜名称选，或直接粘 cid；选了就对全部商品生效）：</label>
+      <div class="catpick">
+        <input id="catSearch" placeholder="例如：键帽 / 键盘 / 鼠标 / 200670001" autocomplete="off">
+        <div id="catDrop" class="catdrop" hidden></div>
+      </div>
+      <input id="manualCid" placeholder="cid" style="width:120px;padding:6px 10px;border:1px solid var(--line);border-radius:8px;font:inherit">
+      <span class="hint" id="catPicked"></span>
       <span class="hint" id="actionHint"></span>
     </div>
   </section>
@@ -263,6 +279,84 @@ async function doCollect() {
   }
   setBusy(false, `采集完成 ${done}/${links.length}`);
   log('采集结束');
+}
+
+// ── 类目选择器：本地缓存搜索，零网络 ──────────────────────────
+const catState = { timer: null, hits: [], sel: -1 };
+
+function catDropEl() { return $('catDrop'); }
+
+function renderCatDrop(items, note) {
+  const d = catDropEl();
+  if (!items.length) {
+    d.innerHTML = `<div class="ce">${note || '没有匹配的类目'}</div>`;
+    d.hidden = false;
+    return;
+  }
+  d.innerHTML = items.map((n, i) => {
+    const path = (n.path || []).join(' > ');
+    const tips = n.tips ? ` · ${n.tips.slice(0, 40)}` : '';
+    return `<div class="ci${i === catState.sel ? ' on' : ''}" data-i="${i}">
+      <b>${n.name || n.id} <span style="color:var(--muted);font-weight:400">${n.id}</span></b>
+      <span>${path}${tips}</span></div>`;
+  }).join('');
+  d.hidden = false;
+  d.querySelectorAll('.ci').forEach(el => {
+    el.onclick = () => pickCategory(items[+el.dataset.i]);
+  });
+}
+
+function pickCategory(node) {
+  if (!node) return;
+  $('manualCid').value = node.id;
+  $('catSearch').value = node.name || '';
+  $('catPicked').textContent = '✓ ' + (node.path || []).join(' > ') + (node.leaf ? '' : '（非末级，可能不能发布）');
+  catDropEl().hidden = true;
+  catState.sel = -1;
+  log(`已选类目 ${node.id} ${(node.path || []).join(' > ')}`);
+}
+
+async function searchCategory(q) {
+  const d = catDropEl();
+  if (!q.trim()) { d.hidden = true; return; }
+  // 纯数字直接当 cid 查
+  if (/^\d{6,}$/.test(q.trim())) {
+    try {
+      const n = await fetch(`/category/${q.trim()}`).then(r => r.ok ? r.json() : null);
+      if (n) { renderCatDrop([n]); return; }
+    } catch (e) { /* 落到搜索 */ }
+  }
+  try {
+    const r = await fetch(`/category/search?q=${encodeURIComponent(q)}&limit=30`).then(x => x.json());
+    catState.hits = r.items || [];
+    catState.sel = catState.hits.length ? 0 : -1;
+    renderCatDrop(catState.hits, '没有匹配的类目，试试别的关键词');
+  } catch (e) {
+    renderCatDrop([], '类目缓存没建好？先跑 scripts/build_category_cache.py');
+  }
+}
+
+const catSearchEl = $('catSearch');
+if (catSearchEl) {
+  catSearchEl.oninput = () => {
+    clearTimeout(catState.timer);
+    const q = catSearchEl.value;
+    catState.timer = setTimeout(() => searchCategory(q), 220);
+  };
+  catSearchEl.onfocus = () => {
+    if (catSearchEl.value.trim()) searchCategory(catSearchEl.value);
+  };
+  catSearchEl.onkeydown = (e) => {
+    const d = catDropEl();
+    if (d.hidden) return;
+    if (e.key === 'ArrowDown') { e.preventDefault(); catState.sel = Math.min(catState.sel + 1, catState.hits.length - 1); renderCatDrop(catState.hits); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); catState.sel = Math.max(catState.sel - 1, 0); renderCatDrop(catState.hits); }
+    else if (e.key === 'Enter') { e.preventDefault(); if (catState.sel >= 0) pickCategory(catState.hits[catState.sel]); }
+    else if (e.key === 'Escape') { d.hidden = true; }
+  };
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.catpick')) catDropEl().hidden = true;
+  });
 }
 
 async function doMap() {

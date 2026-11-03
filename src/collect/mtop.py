@@ -35,6 +35,7 @@ class MTopError(RuntimeError):
     def __init__(self, code: str, message: str = "", payload: dict | None = None):
         super().__init__(f"{code}: {message}")
         self.code = code
+        self.message = message
         self.payload = payload or {}
 
 
@@ -68,15 +69,30 @@ class MTopClient:
                 "Accept": "application/json",
             },
         )
+        self._cookies: dict[str, str] = {}
         if cookies:
             for k, v in cookies.items():
-                self.client.cookies.set(k, v)
+                self._set_cookie(k, v)
         if cookie_file:
             self.load_cookies(cookie_file)
         # 所有出站请求必须过限速器；site 就是平台名
         self.limiter = RateLimiter(site)
 
     # ------------------------------------------------------------ cookies
+    def _set_cookie(self, name: str, value: str) -> None:
+        """只写进自管字典，不碰 httpx 的 cookie jar。
+
+        cookie 文件里 ``_m_h5_tk`` 会出现两次（旧的运行时令牌 + 新的），
+        服务端响应又会 Set-Cookie 下发第三个。httpx 的 jar 里同名多值，
+        取值时直接抛 ``CookieConflict: Multiple cookies exist with name=_m_h5_tk``。
+        改成自己维护 dict + 手动 ``Cookie`` header，就不会有歧义。
+        """
+        self._cookies[name] = value
+
+    @property
+    def cookie_header(self) -> str:
+        return "; ".join(f"{k}={v}" for k, v in self._cookies.items())
+
     def load_cookies(self, path: str | Path) -> None:
         """支持两种格式：``k=v; k=v`` 单行，或 Netscape cookies.txt。"""
         p = Path(path)
@@ -98,10 +114,10 @@ class MTopClient:
                     k, v = chunk.split("=", 1)
                     pairs[k.strip()] = v.strip()
         for k, v in pairs.items():
-            self.client.cookies.set(k, v, domain=self.host)
+            self._set_cookie(k, v)
 
     def cookie(self, name: str) -> str | None:
-        return self.client.cookies.get(name)
+        return self._cookies.get(name)
 
     # ------------------------------------------------------------ token
     def token(self) -> str:
@@ -170,8 +186,17 @@ class MTopClient:
             "data": data_str,
         }
         url = f"https://{self.host}/h5/{api}/{version}/?{urlencode(params, quote_via=quote)}"
-        resp = self.client.get(url)
+        headers = {"Cookie": self.cookie_header} if self._cookies else {}
+        resp = self.client.get(url, headers=headers)
         resp.raise_for_status()
+        # 服务端可能 Set-Cookie 下发新的 _m_h5_tk / _m_h5_tk_enc，收进自管字典
+        for raw in resp.headers.get_list("set-cookie"):
+            head = raw.split(";", 1)[0]
+            if "=" in head:
+                ck, cv = head.split("=", 1)
+                ck = ck.strip()
+                if ck:
+                    self._cookies[ck] = cv.strip()
         body = resp.text
 
         # 先看正文里有没有风控信号，命中就熔断（写进持久化冷却，跨进程生效）

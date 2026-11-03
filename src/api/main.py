@@ -123,6 +123,45 @@ def queue_collect(req: CollectReq) -> dict:
     return {"ok": True, "task_id": tid}
 
 
+@app.get("/category/search")
+def category_search(q: str = "", leaves_only: bool = True, limit: int = 20) -> dict:
+    """按名称搜淘宝类目。读本地缓存，零网络。
+
+    缓存由 scripts/build_category_cache.py 生成（1875 节点 / 1152 末级）。
+    """
+    try:
+        from src.publish.category_api import CategoryCache
+        cache = CategoryCache()
+    except Exception as e:
+        raise HTTPException(500, "类目缓存不可用: %s" % e)
+    if not cache.ready:
+        raise HTTPException(503, "类目缓存不存在，先跑 scripts/build_category_cache.py")
+    if not q.strip():
+        # 空查询返回一级类目，让前端能做默认列表
+        rows = [c for c in cache.children_of(None)]
+        return {"ready": True, "count": cache.count, "items": rows[:limit]}
+    hits = cache.find(q, leaves_only=leaves_only, limit=limit)
+    return {"ready": True, "count": cache.count, "items": hits}
+
+
+@app.get("/category/{cid}")
+def category_detail(cid: str) -> dict:
+    """按 cid 查类目名称/路径/是否末级/类目提示。"""
+    from src.publish.category_api import CategoryCache
+    cache = CategoryCache()
+    node = cache.get(cid)
+    if not node:
+        raise HTTPException(404, "cid=%s 不在缓存里" % cid)
+    return node
+
+
+@app.get("/category/{cid}/children")
+def category_children(cid: str) -> dict:
+    from src.publish.category_api import CategoryCache
+    cache = CategoryCache()
+    return {"cid": cid, "items": cache.children_of(cid)}
+
+
 @app.get("/price/preview")
 def price_preview(price: float) -> dict:
     engine = PriceEngine()

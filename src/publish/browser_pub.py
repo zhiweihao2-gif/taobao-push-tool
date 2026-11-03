@@ -218,15 +218,19 @@ class BrowserSession:
     # -- 登录态 ------------------------------------------------------------ #
 
     def is_logged_in(self, navigate: bool = True) -> bool:
-        """访问卖家中心首页，看是否被踢到登录页。"""
+        """访问卖家中心首页，看是否被踢到登录页。
+
+        判定依据：只要还在淘宝/天猫域下、且没命中登录页特征，就算已登录。
+        不能要求必须停在 myseller —— 发布页域名是 item.upload.taobao.com，
+        用「必须在 myseller」判会把这个正常页面误判成未登录。
+        """
         page = self.page()
         if navigate:
             self.goto(SELLER_HOME, settle_ms=1500)
         url = (page.url or "").lower()
         if any(h in url for h in _LOGIN_HINTS):
             return False
-        # 停在卖家中心说明登录态有效
-        return "myseller.taobao.com" in url or "qn.taobao.com" in url
+        return "taobao.com" in url or "tmall.com" in url
 
     def login_state_detail(self) -> dict:
         """返回结构化登录态，便于启动器给提示。"""
@@ -234,8 +238,9 @@ class BrowserSession:
         url = page.url or ""
         low = url.lower()
         hit = next((h for h in _LOGIN_HINTS if h in low), None)
+        on_taobao = "taobao.com" in low or "tmall.com" in low
         return {
-            "logged_in": hit is None and ("myseller.taobao.com" in low or "qn.taobao.com" in low),
+            "logged_in": hit is None and on_taobao,
             "url": url,
             "login_hint": hit,
             "title": _safe_title(page),
@@ -243,10 +248,20 @@ class BrowserSession:
 
     # -- 截图 -------------------------------------------------------------- #
 
-    def screenshot(self, path: str | Path, full_page: bool = False) -> Path:
+    def screenshot(self, path: str | Path, full_page: bool = False, timeout_ms: int = 60000) -> Path:
         p = Path(path)
         p.parent.mkdir(parents=True, exist_ok=True)
-        self.page().screenshot(path=str(p), full_page=full_page)
+        try:
+            self.page().screenshot(
+                path=str(p),
+                full_page=full_page,
+                timeout=timeout_ms,
+                animations="disabled",
+                caret="hide",
+            )
+        except Exception as exc:
+            # 截图失败不该让整个探测流程崩掉，但要让人看见原因
+            print("[!] 截图失败 %s: %s" % (p.name, str(exc).split("\n")[0][:120]))
         return p
 
 

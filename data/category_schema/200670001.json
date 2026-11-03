@@ -1,0 +1,683 @@
+{
+  "cid": "200670001",
+  "probed_at": "2026-11-03T10:10:42",
+  "cat_path": "电脑硬件/显示器/电脑周边>>键帽",
+  "valid": true,
+  "error": "",
+  "price_hint": "本类目常规价格最低是5.00元，请规范标价行为",
+  "tabs": [
+    "基础信息"
+  ],
+  "fields": [
+    {
+      "kind": "select",
+      "label": "基础信息",
+      "pid": "",
+      "placeholder": "请选择",
+      "value": "模板",
+      "required": false,
+      "multi": false,
+      "readonly": true,
+      "rect": [
+        1176,
+        140,
+        160,
+        36
+      ],
+      "tab": "基础信息",
+      "options": []
+    },
+    {
+      "kind": "select",
+      "label": "品牌",
+      "pid": "",
+      "placeholder": "请输入",
+      "value": "",
+      "required": true,
+      "multi": false,
+      "readonly": false,
+      "rect": [
+        542,
+        533,
+        240,
+        36
+      ],
+      "tab": "基础信息",
+      "options": [
+        "0001",
+        "0431",
+        "10moons/天敏",
+        "A/艾酷",
+        "ACECHOO",
+        "ADDYVGN/蛇罗技术",
+        "AData/威刚",
+        "AKKO",
+        "ALOHAKB",
+        "ALSEYE",
+        "ANGELWRITER",
+        "ANTGAMER",
+        "AOC",
+        "APOZ"
+      ]
+    },
+    {
+      "kind": "select",
+      "label": "适配轴体类型",
+      "pid": "",
+      "placeholder": "请选择",
+      "value": "",
+      "required": true,
+      "multi": true,
+      "readonly": true,
+      "rect": [
+        542,
+        650,
+        240,
+        36
+      ],
+      "tab": "基础信息",
+      "options": [
+        "十字轴",
+        "按键+底包",
+        "火山口",
+        "矮轴",
+        "通用"
+      ]
+    },
+    {
+      "kind": "select",
+      "label": "型号",
+      "pid": "p-656059583",
+      "placeholder": "请输入",
+      "value": "0/100",
+      "required": true,
+      "multi": false,
+      "readonly": false,
+      "rect": [
+        962,
+        533,
+        240,
+        36
+      ],
+      "tab": "基础信息",
+      "options": []
+    },
+    {
+      "kind": "select",
+      "label": "批量导入",
+      "pid": "",
+      "placeholder": "请选择",
+      "value": "模板",
+      "required": false,
+      "multi": false,
+      "readonly": true,
+      "rect": [
+        1176,
+        929,
+        160,
+        36
+      ],
+      "tab": "基础信息",
+      "options": []
+    },
+    {
+      "kind": "select",
+      "label": "启用",
+      "pid": "",
+      "placeholder": "",
+      "value": "满2件打折",
+      "required": false,
+      "multi": false,
+      "readonly": true,
+      "rect": [
+        478,
+        1453,
+        186,
+        36
+      ],
+      "tab": "基础信息"
+    },
+    {
+      "kind": "select",
+      "label": "物流服务",
+      "pid": "",
+      "placeholder": "请选择",
+      "value": "模板",
+      "required": false,
+      "multi": false,
+      "readonly": true,
+      "rect": [
+        1176,
+        1613,
+        160,
+        36
+      ],
+      "tab": "基础信息"
+    },
+    {
+      "kind": "select",
+      "label": "运费模板",
+      "pid": "",
+      "placeholder": "",
+      "value": "[1688一件代发]包邮模板",
+      "required": false,
+      "multi": false,
+      "readonly": false,
+      "rect": [
+        490,
+        1734,
+        248,
+        36
+      ],
+      "tab": "基础信息"
+    },
+    {
+      "kind": "select",
+      "label": "最多支持选择20项分类，查看店铺分类",
+      "pid": "",
+      "placeholder": "选择分类",
+      "value": "",
+      "required": false,
+      "multi": true,
+      "readonly": true,
+      "rect": [
+        414,
+        3864,
+        280,
+        36
+      ],
+      "tab": "基础信息"
+    },
+    {
+      "kind": "select",
+      "label": "售后服务",
+      "pid": "",
+      "placeholder": "请选择",
+      "value": "模板",
+      "required": false,
+      "multi": false,
+      "readonly": true,
+      "rect": [
+        1176,
+        3975,
+        160,
+        36
+      ],
+      "tab": "基础信息"
+    },
+    {
+      "kind": "text",
+      "label": "0/60",
+      "pid": "",
+      "placeholder": "最多允许输入30个汉字（60字符）",
+      "value": "",
+      "maxlen": null,
+      "required": false,
+      "rect": [
+        415,
+        243,
+        724,
+        34
+      ],
+      "tab": "基础信息"
+    },
+    {
+      "kind": "text",
+      "label": "0/30",
+      "pid": "",
+      "placeholder": "最多输入30字符（15个汉字）",
+      "value": "",
+      "maxlen": null,
+      "required": false,
+      "rect": [
+        415,
+        348,
+        724,
+        34
+      ],
+      "tab": "基础信息"
+    },
+    {
+      "kind": "text",
+      "label": "元",
+      "pid": "",
+      "placeholder": "",
+      "value": "",
+      "maxlen": 15,
+      "required": false,
+      "rect": [
+        415,
+        1121,
+        356,
+        34
+      ],
+      "tab": "基础信息"
+    },
+    {
+      "kind": "text",
+      "label": "件",
+      "pid": "",
+      "placeholder": "",
+      "value": "1",
+      "maxlen": 15,
+      "required": false,
+      "rect": [
+        415,
+        1203,
+        356,
+        34
+      ],
+      "tab": "基础信息"
+    },
+    {
+      "kind": "text",
+      "label": "0/60",
+      "pid": "",
+      "placeholder": "",
+      "value": "",
+      "maxlen": 60,
+      "required": false,
+      "rect": [
+        415,
+        1257,
+        700,
+        34
+      ],
+      "tab": "基础信息"
+    },
+    {
+      "kind": "text",
+      "label": "0/64",
+      "pid": "",
+      "placeholder": "",
+      "value": "",
+      "maxlen": 64,
+      "required": false,
+      "rect": [
+        415,
+        1311,
+        700,
+        34
+      ],
+      "tab": "基础信息"
+    },
+    {
+      "kind": "text",
+      "label": "0/32",
+      "pid": "",
+      "placeholder": "",
+      "value": "",
+      "maxlen": 32,
+      "required": false,
+      "rect": [
+        415,
+        1365,
+        700,
+        34
+      ],
+      "tab": "基础信息"
+    },
+    {
+      "kind": "text",
+      "label": "满2件打折",
+      "pid": "",
+      "placeholder": "9.5",
+      "value": "9.5",
+      "maxlen": null,
+      "required": false,
+      "rect": [
+        664,
+        1454,
+        95,
+        34
+      ],
+      "tab": "基础信息"
+    },
+    {
+      "kind": "radio",
+      "label": "全新",
+      "pid": "",
+      "placeholder": "",
+      "value": "checked",
+      "required": false,
+      "rect": [
+        414,
+        196,
+        18,
+        18
+      ],
+      "tab": "基础信息"
+    },
+    {
+      "kind": "radio",
+      "label": "全新",
+      "pid": "",
+      "placeholder": "",
+      "value": "",
+      "required": false,
+      "rect": [
+        500,
+        196,
+        18,
+        18
+      ],
+      "tab": "基础信息"
+    },
+    {
+      "kind": "radio",
+      "label": "中国内地（大陆）",
+      "pid": "",
+      "placeholder": "",
+      "value": "checked",
+      "required": false,
+      "rect": [
+        414,
+        834,
+        18,
+        18
+      ],
+      "tab": "基础信息"
+    },
+    {
+      "kind": "radio",
+      "label": "中国内地（大陆）",
+      "pid": "",
+      "placeholder": "",
+      "value": "",
+      "required": false,
+      "rect": [
+        624,
+        834,
+        18,
+        18
+      ],
+      "tab": "基础信息"
+    },
+    {
+      "kind": "radio",
+      "label": "今日发提升转化",
+      "pid": "",
+      "placeholder": "",
+      "value": "",
+      "required": false,
+      "rect": [
+        414,
+        993,
+        18,
+        18
+      ],
+      "tab": "基础信息"
+    },
+    {
+      "kind": "radio",
+      "label": "今日发提升转化",
+      "pid": "",
+      "placeholder": "",
+      "value": "",
+      "required": false,
+      "rect": [
+        612,
+        993,
+        18,
+        18
+      ],
+      "tab": "基础信息"
+    },
+    {
+      "kind": "radio",
+      "label": "今日发提升转化",
+      "pid": "",
+      "placeholder": "",
+      "value": "checked",
+      "required": false,
+      "rect": [
+        854,
+        993,
+        18,
+        18
+      ],
+      "tab": "基础信息"
+    },
+    {
+      "kind": "radio",
+      "label": "今日发提升转化",
+      "pid": "",
+      "placeholder": "",
+      "value": "",
+      "required": false,
+      "rect": [
+        998,
+        993,
+        18,
+        18
+      ],
+      "tab": "基础信息"
+    },
+    {
+      "kind": "checkbox",
+      "label": "启用",
+      "pid": "",
+      "placeholder": "",
+      "value": "",
+      "required": false,
+      "rect": [
+        414,
+        1462,
+        18,
+        18
+      ],
+      "tab": "基础信息"
+    },
+    {
+      "kind": "checkbox",
+      "label": "使用物流配送",
+      "pid": "",
+      "placeholder": "",
+      "value": "checked",
+      "required": false,
+      "rect": [
+        414,
+        1673,
+        18,
+        18
+      ],
+      "tab": "基础信息"
+    },
+    {
+      "kind": "checkbox",
+      "label": "",
+      "pid": "",
+      "placeholder": "",
+      "value": "",
+      "required": false,
+      "rect": [
+        425,
+        1833,
+        18,
+        18
+      ],
+      "tab": "基础信息"
+    },
+    {
+      "kind": "checkbox",
+      "label": "电子交易凭证",
+      "pid": "",
+      "placeholder": "",
+      "value": "",
+      "required": false,
+      "rect": [
+        414,
+        1880,
+        18,
+        18
+      ],
+      "tab": "基础信息"
+    },
+    {
+      "kind": "checkbox",
+      "label": "启用",
+      "pid": "",
+      "placeholder": "",
+      "value": "",
+      "required": false,
+      "rect": [
+        414,
+        1927,
+        13,
+        13
+      ],
+      "tab": "基础信息"
+    },
+    {
+      "kind": "radio",
+      "label": "不设置商品维度区域限售模板",
+      "pid": "",
+      "placeholder": "",
+      "value": "checked",
+      "required": false,
+      "rect": [
+        414,
+        1980,
+        18,
+        18
+      ],
+      "tab": "基础信息"
+    },
+    {
+      "kind": "radio",
+      "label": "不设置商品维度区域限售模板",
+      "pid": "",
+      "placeholder": "",
+      "value": "",
+      "required": false,
+      "rect": [
+        694,
+        1980,
+        18,
+        18
+      ],
+      "tab": "基础信息"
+    },
+    {
+      "kind": "radio",
+      "label": "拍下减库存",
+      "pid": "",
+      "placeholder": "",
+      "value": "checked",
+      "required": false,
+      "rect": [
+        414,
+        2165,
+        18,
+        18
+      ],
+      "tab": "基础信息"
+    },
+    {
+      "kind": "radio",
+      "label": "拍下减库存",
+      "pid": "",
+      "placeholder": "",
+      "value": "",
+      "required": false,
+      "rect": [
+        562,
+        2165,
+        18,
+        18
+      ],
+      "tab": "基础信息"
+    },
+    {
+      "kind": "checkbox",
+      "label": "保修服务",
+      "pid": "",
+      "placeholder": "",
+      "value": "",
+      "required": false,
+      "rect": [
+        414,
+        4035,
+        18,
+        18
+      ],
+      "tab": "基础信息"
+    },
+    {
+      "kind": "checkbox",
+      "label": "服务承诺：该类商品，必须支持【七天退货】服务",
+      "pid": "",
+      "placeholder": "",
+      "value": "checked",
+      "required": false,
+      "rect": [
+        414,
+        4083,
+        18,
+        18
+      ],
+      "tab": "基础信息"
+    },
+    {
+      "kind": "radio",
+      "label": "立刻上架",
+      "pid": "",
+      "placeholder": "",
+      "value": "checked",
+      "required": false,
+      "rect": [
+        414,
+        4160,
+        18,
+        18
+      ],
+      "tab": "基础信息"
+    },
+    {
+      "kind": "radio",
+      "label": "立刻上架",
+      "pid": "",
+      "placeholder": "",
+      "value": "",
+      "required": false,
+      "rect": [
+        528,
+        4160,
+        18,
+        18
+      ],
+      "tab": "基础信息"
+    },
+    {
+      "kind": "radio",
+      "label": "立刻上架",
+      "pid": "",
+      "placeholder": "",
+      "value": "",
+      "required": false,
+      "rect": [
+        642,
+        4160,
+        18,
+        18
+      ],
+      "tab": "基础信息"
+    },
+    {
+      "kind": "checkbox",
+      "label": "启用",
+      "pid": "",
+      "placeholder": "",
+      "value": "",
+      "required": false,
+      "rect": [
+        414,
+        4239,
+        18,
+        18
+      ],
+      "tab": "基础信息"
+    }
+  ],
+  "sku": {}
+}

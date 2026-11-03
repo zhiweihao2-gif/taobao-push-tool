@@ -103,6 +103,48 @@ def extract_img_urls(html: str) -> list[str]:
     return out
 
 
+# <img ... size="790x1580" ...>  —— getdesc v6 的 pcDescContent 用这个属性给真实尺寸
+_IMG_TAG = re.compile(r"<img\b[^>]*>", re.I)
+_IMG_SIZE = re.compile(r'\bsize\s*=\s*["\']?\s*(\d+)\s*[xX*]\s*(\d+)\s*["\']?', re.I)
+_IMG_SRC_ANY = re.compile(
+    r'''(?:src|data-src|data-ks-lazyload|data-lazyload)\s*=\s*["']([^"']+)["']''', re.I)
+# alicdn 路径里的尺寸：-0-tps-750-128.jpg / -2-tps-1240-450.png
+_URL_SIZE = re.compile(r"-tps-(\d+)-(\d+)\.", re.I)
+
+
+def extract_img_with_size(html: str) -> list[dict]:
+    """抽详情图并带上真实尺寸：[{"url","w","h"}]，按出现顺序去重。
+
+    getdesc v6 的 pcDescContent 里每张图都带 size="790x1580"，靠这个能精准
+    剔掉 banner（750x128）、占位符（10x10）和主图（1440x1440），
+    比 Playwright 渲染后读 naturalWidth 靠谱得多。
+    """
+    if not html:
+        return []
+    seen: set[str] = set()
+    out: list[dict] = []
+    for tag in _IMG_TAG.finditer(html):
+        s = tag.group(0)
+        m = _IMG_SRC_ANY.search(s)
+        if not m:
+            continue
+        u = clean_image_url(m.group(1))
+        if not u or u.startswith("data:"):
+            continue
+        if u in seen:
+            continue
+        seen.add(u)
+        sz = _IMG_SIZE.search(s)
+        w = int(sz.group(1)) if sz else 0
+        h = int(sz.group(2)) if sz else 0
+        if not w or not h:
+            m2 = _URL_SIZE.search(u)
+            if m2:
+                w, h = int(m2.group(1)), int(m2.group(2))
+        out.append({"url": u, "w": w, "h": h})
+    return out
+
+
 def strip_tags(html: str) -> str:
     text = re.sub(r"<script.*?</script>", " ", html or "", flags=re.S | re.I)
     text = re.sub(r"<style.*?</style>", " ", text, flags=re.S | re.I)

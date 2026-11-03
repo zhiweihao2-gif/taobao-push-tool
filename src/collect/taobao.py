@@ -22,7 +22,14 @@ from .session import RiskDetector, SessionHealth, SessionStore
 API_DETAIL = "mtop.taobao.pcdetail.data.get"
 # 实测：pcdetail 的业务参数名是 `id`，不是 `itemId`。
 # 传 itemId 会返回 FAIL_SYS_BIZPARAM_MISSED::缺少业务参数id。
-API_DESC = "mtop.taobao.detail.getdesc"   # 实测已下线（FAIL_SYS_API_NOT_FOUNDED），仅保留探测用
+#
+# 详情图文：**版本必须是 6.0**（从店透视反混淆包里翻出来的）。
+#   v=1.0 → FAIL_SYS_API_NOT_FOUNDED（接口不存在，之前一直以为下线了）
+#   v=6.0 → SUCCESS，返回 data.pcDescContent（完整 HTML）+ data.itemProperties
+#   v=7.0 → FAIL_SYS_SERVICE_INNER_FAULT（接口在，但缺参数）
+# data 只需 {"id": "<itemId>"}。
+API_DESC = "mtop.taobao.detail.getdesc"
+API_DESC_VERSION = "6.0"
 
 _INIT_DATA = re.compile(r"window\.__INIT_DATA__\s*=\s*(\{.*?\});", re.S)
 _TSHOP = re.compile(r"TShop\.Setup\(\s*(\{.*?\})\s*\)", re.S)
@@ -84,13 +91,73 @@ class TaobaoCollector(BaseCollector):
                     return data.get("data", data)
         return {}
 
+    # ------------------------------------------------------------ 详情图
+    def fetch_desc_html(self, item_id: str) -> dict:
+        """mtop 拿详情图文 HTML。比 Playwright 渲染快 20 倍、也更准。
+
+        返回 {"html": str, "props": [...], "price_img": str, "seller_id": str}
+        失败返回 {}，调用方可以降级到 attach_rendered_desc。
+        """
+        try:
+            d = self.client.call(API_DESC, API_DESC_VERSION, {"id": str(item_id)},
+                                 retries=1)
+        except Exception as e:
+            return {"error": f"{type(e).__name__}: {e}"}
+        data = d.get("data") or {}
+        html = data.get("pcDescContent") or data.get("desc") or ""
+        props = []
+        for p in (data.get("itemProperties") or []):
+            name, val = p.get("name"), p.get("value")
+            if name and val:
+                props.append({"name": str(name), "value": str(val)})
+        return {
+            "html": html,
+            "props": props,
+            "price_img": data.get("priceDescImg") or "",
+            "seller_id": str(data.get("sellerId") or ""),
+        }
+
+    def attach_desc(self, item: Item, use_render_fallback: bool = True) -> Item:
+        """优先走 mtop getdesc v6.0；拿不到再降级 Playwright 渲染。"""
+        from .base import extract_img_with_size
+
+        r = self.fetch_desc_html(item.item_id)
+        if r.get("html"):
+            raw = extract_img_with_size(r["html"])
+            urls, sizes = [], []
+            for x in raw:
+                urls.append(x["url"])
+                sizes.append([x["w"], x["h"]])
+            # 服务端把长图切成 ~crop,x,y,w,h~ 多段：同一 O1CN 只留 y 最小那段
+            from .detail_img import clean_detail_images
+            clean = clean_detail_images(urls, sizes)
+            item.detail_images = [Image(url=u, role="detail") for u in clean]
+            caps = item.extra.setdefault("capabilities", {})
+            caps["detail_images"] = len(clean)
+            caps["detail_source"] = "mtop"
+            item.extra["desc"] = {
+                "source": "mtop.getdesc.v6",
+                "html_len": len(r["html"]),
+                "raw_imgs": len(raw),
+                "detail_images": len(clean),
+                "price_img": r.get("price_img"),
+            }
+            # getdesc 顺带给的参数比 pcdetail 的 componentsVO 还干净，补进去
+            existing = {p.name for p in item.params}
+            for p in r.get("props") or []:
+                if p["name"] not in existing:
+                    item.params.append(Param(name=p["name"], value=p["value"],
+                                             group="属性"))
+            return item
+
+        item.extra["desc"] = {"source": "none", "error": r.get("error")}
+        if use_render_fallback:
+            return self.attach_rendered_desc(item)
+        return item
+
     # ------------------------------------------------------------ 详情图渲染
     def attach_rendered_desc(self, item: Item) -> Item:
-        """用 Playwright 渲染详情页补 detail_images。
-
-        淘宝 descUrl/apiDesc 接口已下线、PC 页是客户端渲染，静态请求拿不到详情图。
-        这是唯一可行路径，代价是每个商品多 10~20 秒。
-        """
+        """Playwright 渲染详情页补 detail_images（getdesc 失败时的兜底）。"""
         from .render import RenderError, render_detail_images
 
         try:
@@ -235,8 +302,18 @@ class TaobaoCollector(BaseCollector):
                 cat_path.append(str(node.get("name") or ""))
 
         # 主图视频（实测：item.videos[] 里带 mp4 直链 + 封面 + 画幅比）
+        # 注意：videos 有两个位置，不同商品只有其中一个有值 ——
+        #   630278968130 两处都有；1073025553052 两处都是 0 项（真的没视频）
+        # 只读 item.videos 会漏掉只在 componentsVO.headImageVO.videos 里的商品。
+        raw_videos: list = []
+        for src in (item_node.get("videos"),
+                    dig(d, "componentsVO.headImageVO.videos", default=None)):
+            if isinstance(src, list):
+                raw_videos.extend(src)
+
         videos: list[Video] = []
-        for v in (item_node.get("videos") or []):
+        seen_vid: set[str] = set()
+        for v in raw_videos:
             if not isinstance(v, dict):
                 continue
             u = str(v.get("url") or "").strip()
@@ -244,9 +321,14 @@ class TaobaoCollector(BaseCollector):
                 continue
             if u.startswith("//"):
                 u = "https:" + u
+            vid = str(v.get("videoId") or "") or None
+            key = vid or u
+            if key in seen_vid:
+                continue
+            seen_vid.add(key)
             videos.append(Video(
                 url=u,
-                video_id=str(v.get("videoId") or "") or None,
+                video_id=vid,
                 cover=clean_image_url(v.get("videoThumbnailURL") or "") or None,
                 dimension=str(v.get("spatialVideoDimension") or "") or None,
             ))
