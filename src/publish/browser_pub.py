@@ -184,25 +184,39 @@ class BrowserSession:
     # -- 页面 -------------------------------------------------------------- #
 
     def page(self):
-        """拿一个可用标签页。优先复用已有页面，避免开一堆。"""
-        if self._page is not None:
+        """拿一个可用标签页。
+
+        默认**总是新开**，绝不复用用户自己开着的页面。
+
+        这条规则是踩坑换来的：早先这里写的是 `pages[0] if pages else new_page()`，
+        用户浏览器里同时开着 cn.bing.com 的搜索页时，page() 就把那个搜索页交出去，
+        goto 之后 probe 抓到的「字段」是 Bing 的搜索框（pid=go、value=搜索），
+        看起来像「类目不存在」，实际是抓错了页面。
+
+        需要接管某个已有标签（例如刚扫码登录完的那个）时，显式传
+        reuse_url_contains="myseller" 之类。
+        """
+        if self._page is not None and not self._page.is_closed():
             return self._page
 
         pages = [p for p in self._context.pages if not p.is_closed()]
+
+        # 1) 显式要求复用某个 URL 的页面
         if self.reuse_url_contains:
             for p in pages:
                 if self.reuse_url_contains in (p.url or ""):
                     self._page = p
                     return p
 
-        # 找一个空标签页（about:blank / newtab）
+        # 2) 空标签页
         for p in pages:
             u = p.url or ""
             if u in ("about:blank", "") or "newtab" in u:
                 self._page = p
                 return p
 
-        self._page = pages[0] if pages else self._context.new_page()
+        # 3) 新开一个 —— 不再回落到 pages[0]，那可能是用户的私人页面
+        self._page = self._context.new_page()
         return self._page
 
     def goto(self, url: str, wait_until: str = "domcontentloaded", settle_ms: int = 1200):

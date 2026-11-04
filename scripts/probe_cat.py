@@ -249,7 +249,17 @@ def probe(cid, read_opts=True, timeout_ms=60000):
             log("  [..] goto: %s" % str(e).split("\n")[0][:100])
         page.wait_for_timeout(3500)
 
-        body = page.evaluate("() => document.body.innerText || ''")
+        # 防呆：goto 之后必须真的在发布页。
+        # 早先 BrowserSession.page() 会复用用户自己开着的标签页（比如 cn.bing.com），
+        # 那种情况下 goto 看似成功、body 里也没有报错文案，于是 valid=True，
+        # 但抓到的「字段」其实是别的网站的表单。这里用 URL 卡一道。
+        cur = page.url or ""
+        if "upload.taobao.com" not in cur:
+            rep["error"] = "没有跳到发布页，当前页面是 %s" % cur[:100]
+            log("  [XX] 没有跳到发布页: %s" % cur[:100])
+            return rep
+
+        body = page.evaluate("() => document.body ? document.body.innerText : ''") or ""
         if "类目不存在或无效" in body:
             rep["error"] = "类目不存在或无效（该店铺无此权限）"
             log("  [XX] 类目不存在或无效")

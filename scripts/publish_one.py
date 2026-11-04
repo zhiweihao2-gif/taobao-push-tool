@@ -170,6 +170,24 @@ def fill_by_unit(page, unit: str, text: str, label: str) -> bool:
             page.wait_for_timeout(25)
         page.wait_for_timeout(350)
         got = loc.input_value()
+
+        # React 受控输入有时会吞掉前面几个字符（实测 571.0 只剩 .0）。
+        # 回读不一致时退回 JS 原生 setter + 三个事件，这是最可靠的一条路。
+        if got.strip() != text.strip():
+            log("    [..] %s 键盘写入 %r 不对，改走 JS setter" % (label, got))
+            page.evaluate("""([sel, val]) => {
+                const el = document.querySelector(sel);
+                if (!el) return;
+                const set = Object.getOwnPropertyDescriptor(
+                    window.HTMLInputElement.prototype, 'value').set;
+                set.call(el, val);
+                el.dispatchEvent(new Event('input',  {bubbles: true}));
+                el.dispatchEvent(new Event('change', {bubbles: true}));
+                el.dispatchEvent(new Event('blur',   {bubbles: true}));
+            }""", ['[data-dsh-unit="%s"]' % unit, text])
+            page.wait_for_timeout(400)
+            got = loc.input_value()
+
         ok = got.strip() == text.strip()
         log("    %s %-8s -> %r (%s)" % ("[OK]" if ok else "[!!]", label, got, "一致" if ok else "不一致"))
         return ok
@@ -598,7 +616,9 @@ def main() -> int:
     except (TypeError, ValueError):
         price = 39.9
     total_qty = item.stock_total or sum((s.quantity or 0) for s in item.skus) or 100
-    log("一口价=%s 总库存=%s" % (price, total_qty))
+    # 整数价不要写成 "571.0"（页面会当成非法），但 "571.5" 要保留小数
+    price_txt = ("%d" % price) if float(price) == int(price) else ("%.2f" % price).rstrip("0").rstrip(".")
+    log("一口价=%s 总库存=%s" % (price_txt, total_qty))
 
     os_url = publish_url_for(args.cid)
     OUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -675,7 +695,7 @@ def main() -> int:
 
         # ---- 一口价 / 总库存 ----
         log("\n[6] 一口价 / 总库存")
-        fill_by_unit(page, "元", str(price), "一口价")
+        fill_by_unit(page, "元", price_txt, "一口价")
         page.wait_for_timeout(400)
         fill_by_unit(page, "件", str(total_qty), "总库存")
 

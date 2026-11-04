@@ -73,3 +73,5 @@ htmlcov/
 
 # 发布 PoC 产物（探测报告 / 截图）
 data/publish_poc/
+data/restyled/
+data/category_schema/

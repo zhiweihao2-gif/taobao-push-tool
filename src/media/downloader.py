@@ -153,16 +153,26 @@ class MediaPipeline:
 
     # ------------------------------------------------------------ public
     def run(self, with_detail: bool = True, with_video: bool = True) -> Item:
-        """下载并处理该商品的全部素材，始终返回 item（失败只体现在 manifest/stats）。"""
-        targets: list[Image] = list(self.item.main_images)
+        """下载并处理该商品的全部素材，始终返回 item（失败只体现在 manifest/stats）。
+
+        文件名里带 **原始序号**（``main_01_<sha16>.jpg``），因为源列表本身是有序的
+        （``main_images`` 是官方主图顺序，``detail_images`` 是详情图文从上到下的顺序），
+        而 sha256 前缀排序是随机的。发布时按文件名取图就能保持顺序。
+        """
+        # (序号, role, Image)：主图和详情图各自从 1 开始编号
+        targets: list[tuple[int, str, Image]] = []
+        for i, img in enumerate(self.item.main_images, 1):
+            targets.append((i, "main", img))
         if with_detail:
-            targets += list(self.item.detail_images)
+            for i, img in enumerate(self.item.detail_images, 1):
+                targets.append((i, "detail", img))
 
         if targets:
             with httpx.Client(timeout=self.timeout, follow_redirects=True,
                               headers=self._base_headers()) as client:
                 with ThreadPoolExecutor(max_workers=self.max_workers) as pool:
-                    futures = [pool.submit(self._one, client, img) for img in targets]
+                    futures = [pool.submit(self._one, client, seq, role, img)
+                               for seq, role, img in targets]
                     for fut in as_completed(futures):
                         try:
                             fut.result()
@@ -282,11 +292,11 @@ class MediaPipeline:
         return image
 
     # ------------------------------------------------------------ worker
-    def _one(self, client: httpx.Client, img: Image) -> None:
+    def _one(self, client: httpx.Client, seq: int, role: str, img: Image) -> None:
         """线程池任务：处理单个 Image 条目，失败不影响其他条目。"""
         try:
             ref = referer_for(img.url, self.default_referer)
-            _, done = self._execute(client, img.url, img.role, ref)
+            _, done = self._execute(client, img.url, role, ref, seq)
         except MediaDownloadError:
             return  # 已写入 manifest.error + stats
         img.local_path = done.local_path
@@ -295,11 +305,11 @@ class MediaPipeline:
         img.sha256 = done.sha256
 
     def _execute(self, client: httpx.Client, url: str, role: str,
-                 referer: str) -> tuple[dict[str, Any], Image]:
+                 referer: str, seq: int = 0) -> tuple[dict[str, Any], Image]:
         """下载 + 处理 + 记录统计；成功返回 (manifest 记录, Image)，失败记 error 后抛出。"""
         self._bump("total")
         try:
-            record, image = self._download_and_process(client, url, role, referer)
+            record, image = self._download_and_process(client, url, role, referer, seq)
         except MediaDownloadError as e:
             self._append({"role": role, "url": url, "referer": referer,
                           "error": e.message, "attempts": e.attempts})
@@ -320,7 +330,7 @@ class MediaPipeline:
         return record, image
 
     def _download_and_process(self, client: httpx.Client, url: str, role: str,
-                              referer: str) -> tuple[dict[str, Any], Image]:
+                              referer: str, seq: int = 0) -> tuple[dict[str, Any], Image]:
         raw, content_type, attempts = self._fetch(client, url, role, referer)
         digest = hashlib.sha256(raw).hexdigest()
 
@@ -328,13 +338,19 @@ class MediaPipeline:
         src_size = src.size
         out, resized = self._apply_policy(src, role)
 
-        path = self.dir / f"{role}_{digest[:16]}.jpg"
+        # 文件名带原始序号：main_01_<sha16>.jpg / detail_01_<sha16>.jpg
+        # 这样按文件名排序就是原始顺序（源列表有序，sha256 是随机序）
+        if seq:
+            path = self.dir / f"{role}_{seq:02d}_{digest[:16]}.jpg"
+        else:
+            path = self.dir / f"{role}_{digest[:16]}.jpg"
         nbytes = self._write_jpeg(out, path)
 
         image = Image(url=url, role=role, local_path=str(path), sha256=digest,
                       width=out.width, height=out.height)
         record = {
             "role": role,
+            "seq": seq,
             "url": url,
             "referer": referer,
             "local": str(path),
@@ -422,16 +438,13 @@ class MediaPipeline:
         # 2) 统一转 RGB（带 alpha 的贴合白底，避免转 JPEG 变黑）
         im = self._to_rgb(im)
 
-        # 3) 主图 / SKU 图：居中裁正方 → 不足则放大（淘宝、京东主图强制 1:1）
+        # 3) 主图 / SKU 图：只补小，不裁形
+        # 淘宝发布页有 1:1 主图 和 3:4 主图 两个槽位，3:4 的图应原样进 3:4 槽位。
+        # 之前无条件居中裁正方会把 750x1000 裁成 750x750（上下各丢 12.5%），
+        # 再放大到 800 只会更模糊。这里改成：方形图才考虑放大，非方形保持原样。
         if role in _SQUARE_ROLES:
             w, h = im.size
-            if w != h:
-                side = min(w, h)
-                left = (w - side) // 2
-                top = (h - side) // 2
-                im = im.crop((left, top, left + side, top + side))
-                changed = True
-            if min(im.size) < self.min_size:
+            if w == h and min(w, h) < self.min_size:
                 im = im.resize((self.target_size, self.target_size), _LANCZOS)
                 changed = True
 
